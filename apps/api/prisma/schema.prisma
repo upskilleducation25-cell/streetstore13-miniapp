@@ -199,6 +199,8 @@ model Product {
   @@index([status, isPopular])
   @@index([status, isSale])
   @@index([brandId])
+  @@index([status, createdAt])
+  @@index([status, price])
   @@index([searchVector], type: Gin)
   /// Індекси pg_trgm для нечіткого пошуку (розширення створюється в міграції init).
   @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_name_trgm_idx")
@@ -226,6 +228,8 @@ model ProductVariant {
 
   @@unique([productId, colorId, sizeId])
   @@index([stock])
+  @@index([colorId, sizeId])
+  @@index([sizeId])
   @@map("product_variants")
 }
 
