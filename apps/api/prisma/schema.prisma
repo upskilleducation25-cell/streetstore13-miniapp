@@ -1,0 +1,416 @@
+// STREETSTORE.13 — схема бази даних.
+// Гроші зберігаються цілими числами в копійках (Int).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enum-и ────────────────────────────────────────────────────────────────
+
+enum AdminRole {
+  OWNER
+  MANAGER
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  HIDDEN
+  ARCHIVED
+}
+
+enum SizeSystem {
+  CLOTHING
+  SHOES_EU
+  ONE_SIZE
+  OTHER
+}
+
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  PACKED
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  NOT_REQUIRED
+  PENDING
+  PAID
+  REFUNDED
+}
+
+enum InventoryReason {
+  ORDER
+  CANCEL
+  MANUAL
+  IMPORT
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+}
+
+// ─── Користувачі ───────────────────────────────────────────────────────────
+
+/// Покупець, що прийшов з Telegram.
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  telegramId   BigInt    @unique @map("telegram_id")
+  username     String?
+  firstName    String?   @map("first_name")
+  lastName     String?   @map("last_name")
+  languageCode String?   @map("language_code")
+  phone        String?
+  isBotBlocked Boolean   @default(false) @map("is_bot_blocked")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  lastSeenAt   DateTime? @map("last_seen_at") @db.Timestamptz
+
+  cartItems     CartItem[]
+  orders        Order[]
+  notifications NotificationLog[]
+
+  @@map("users")
+}
+
+model Admin {
+  id           String    @id @default(uuid()) @db.Uuid
+  /// Зберігається в нижньому регістрі.
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  name         String
+  role         AdminRole @default(MANAGER)
+  telegramId   BigInt?   @map("telegram_id")
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  statusChanges      OrderStatusHistory[]
+  inventoryMovements InventoryMovement[]
+
+  @@map("admins")
+}
+
+// ─── Каталог ───────────────────────────────────────────────────────────────
+
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  parentId  String?  @map("parent_id") @db.Uuid
+  name      String
+  slug      String   @unique
+  imageUrl  String?  @map("image_url")
+  icon      String?
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@index([parentId, sortOrder])
+  @@map("categories")
+}
+
+model Brand {
+  id        String  @id @default(uuid()) @db.Uuid
+  name      String  @unique
+  slug      String  @unique
+  logoUrl   String? @map("logo_url")
+  sortOrder Int     @default(0) @map("sort_order")
+  isActive  Boolean @default(true) @map("is_active")
+
+  products Product[]
+
+  @@map("brands")
+}
+
+model Color {
+  id        String @id @default(uuid()) @db.Uuid
+  name      String @unique
+  slug      String @unique
+  hex       String
+  sortOrder Int    @default(0) @map("sort_order")
+
+  variants ProductVariant[]
+  images   ProductImage[]
+
+  @@map("colors")
+}
+
+model Size {
+  id         String     @id @default(uuid()) @db.Uuid
+  label      String
+  sizeSystem SizeSystem @map("size_system")
+  sortOrder  Int        @default(0) @map("sort_order")
+
+  variants ProductVariant[]
+
+  @@unique([sizeSystem, label])
+  @@map("sizes")
+}
+
+model Product {
+  id          String        @id @default(uuid()) @db.Uuid
+  sku         String        @unique
+  name        String
+  slug        String        @unique
+  brandId     String        @map("brand_id") @db.Uuid
+  categoryId  String        @map("category_id") @db.Uuid
+  description String        @default("")
+  material    String?
+  /// Ціна в копійках.
+  price       Int
+  /// Стара ціна в копійках; якщо задана, вона більша за price.
+  oldPrice    Int?          @map("old_price")
+  status      ProductStatus @default(DRAFT)
+  isNew       Boolean       @default(false) @map("is_new")
+  isPopular   Boolean       @default(false) @map("is_popular")
+  isSale      Boolean       @default(false) @map("is_sale")
+  sortWeight  Int           @default(0) @map("sort_weight")
+  /// Кеш суми залишків усіх варіантів (оновлюється тригером у БД).
+  totalStock  Int           @default(0) @map("total_stock")
+  salesCount  Int           @default(0) @map("sales_count")
+  viewsCount  Int           @default(0) @map("views_count")
+  /// Повнотекстовий пошук; заповнюється тригером у БД.
+  searchVector Unsupported("tsvector")? @map("search_vector")
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt   DateTime?     @map("deleted_at") @db.Timestamptz
+
+  brand      Brand            @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  category   Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  variants   ProductVariant[]
+  images     ProductImage[]
+  orderItems OrderItem[]
+
+  @@index([status, categoryId])
+  @@index([status, isNew])
+  @@index([status, isPopular])
+  @@index([status, isSale])
+  @@index([brandId])
+  @@index([searchVector], type: Gin)
+  /// Індекси pg_trgm для нечіткого пошуку (розширення створюється в міграції init).
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_name_trgm_idx")
+  @@index([sku(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_sku_trgm_idx")
+  @@map("products")
+}
+
+/// Одиниця складу: товар + колір + розмір.
+model ProductVariant {
+  id            String  @id @default(uuid()) @db.Uuid
+  productId     String  @map("product_id") @db.Uuid
+  colorId       String  @map("color_id") @db.Uuid
+  sizeId        String  @map("size_id") @db.Uuid
+  sku           String?
+  stock         Int     @default(0)
+  priceOverride Int?    @map("price_override")
+  isActive      Boolean @default(true) @map("is_active")
+
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color              Color               @relation(fields: [colorId], references: [id], onDelete: Restrict)
+  size               Size                @relation(fields: [sizeId], references: [id], onDelete: Restrict)
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+  inventoryMovements InventoryMovement[]
+
+  @@unique([productId, colorId, sizeId])
+  @@index([stock])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id         String  @id @default(uuid()) @db.Uuid
+  productId  String  @map("product_id") @db.Uuid
+  colorId    String? @map("color_id") @db.Uuid
+  storageKey String  @map("storage_key")
+  /// { thumb, medium, large } — URL-и WebP-версій.
+  urls       Json
+  width      Int
+  height     Int
+  alt        String?
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color   Color?  @relation(fields: [colorId], references: [id], onDelete: SetNull)
+
+  @@index([productId, sortOrder])
+  @@map("product_images")
+}
+
+// ─── Кошик і замовлення ────────────────────────────────────────────────────
+
+model CartItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  variantId String   @map("variant_id") @db.Uuid
+  quantity  Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, variantId])
+  @@map("cart_items")
+}
+
+model DeliveryService {
+  id              String  @id @default(uuid()) @db.Uuid
+  code            String  @unique
+  name            String
+  supportsLockers Boolean @default(false) @map("supports_lockers")
+  isActive        Boolean @default(true) @map("is_active")
+  sortOrder       Int     @default(0) @map("sort_order")
+
+  orders Order[]
+
+  @@map("delivery_services")
+}
+
+model PaymentMethod {
+  id        String  @id @default(uuid()) @db.Uuid
+  code      String  @unique
+  name      String
+  isActive  Boolean @default(false) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
+  config    Json    @default("{}")
+
+  orders Order[]
+
+  @@map("payment_methods")
+}
+
+model Order {
+  id                String        @id @default(uuid()) @db.Uuid
+  /// Читабельний номер, напр. SS13-10024 (з послідовності order_number_seq).
+  number            String        @unique
+  userId            String        @map("user_id") @db.Uuid
+  status            OrderStatus   @default(NEW)
+  customerName      String        @map("customer_name")
+  customerPhone     String        @map("customer_phone")
+  city              String
+  cityRef           String?       @map("city_ref")
+  deliveryServiceId String        @map("delivery_service_id") @db.Uuid
+  deliveryPoint     String        @map("delivery_point")
+  deliveryPointRef  String?       @map("delivery_point_ref")
+  trackingNumber    String?       @map("tracking_number")
+  comment           String?
+  adminNote         String?       @map("admin_note")
+  subtotal          Int
+  discountTotal     Int           @default(0) @map("discount_total")
+  deliveryCost      Int           @default(0) @map("delivery_cost")
+  total             Int
+  paymentMethodId   String?       @map("payment_method_id") @db.Uuid
+  paymentStatus     PaymentStatus @default(NOT_REQUIRED) @map("payment_status")
+  idempotencyKey    String        @unique @map("idempotency_key")
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  deliveryService DeliveryService      @relation(fields: [deliveryServiceId], references: [id], onDelete: Restrict)
+  paymentMethod   PaymentMethod?       @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  items           OrderItem[]
+  statusHistory   OrderStatusHistory[]
+  inventory       InventoryMovement[]
+  notifications   NotificationLog[]
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([customerPhone])
+  @@map("orders")
+}
+
+/// Знімок позиції на момент покупки: не залежить від подальших змін товару.
+model OrderItem {
+  id          String  @id @default(uuid()) @db.Uuid
+  orderId     String  @map("order_id") @db.Uuid
+  productId   String? @map("product_id") @db.Uuid
+  variantId   String? @map("variant_id") @db.Uuid
+  productName String  @map("product_name")
+  brandName   String  @map("brand_name")
+  sku         String
+  colorName   String  @map("color_name")
+  sizeLabel   String  @map("size_label")
+  imageUrl    String? @map("image_url")
+  unitPrice   Int     @map("unit_price")
+  quantity    Int
+  lineTotal   Int     @map("line_total")
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id         String       @id @default(uuid()) @db.Uuid
+  orderId    String       @map("order_id") @db.Uuid
+  fromStatus OrderStatus? @map("from_status")
+  toStatus   OrderStatus  @map("to_status")
+  adminId    String?      @map("admin_id") @db.Uuid
+  comment    String?
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  order Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  admin Admin? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([orderId, createdAt])
+  @@map("order_status_history")
+}
+
+/// Журнал змін складу: хто, коли і чому змінив залишок.
+model InventoryMovement {
+  id        String          @id @default(uuid()) @db.Uuid
+  variantId String          @map("variant_id") @db.Uuid
+  delta     Int
+  reason    InventoryReason
+  orderId   String?         @map("order_id") @db.Uuid
+  adminId   String?         @map("admin_id") @db.Uuid
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  order   Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  admin   Admin?         @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([variantId, createdAt])
+  @@map("inventory_movements")
+}
+
+// ─── Налаштування та службове ──────────────────────────────────────────────
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("settings")
+}
+
+model NotificationLog {
+  id        String             @id @default(uuid()) @db.Uuid
+  userId    String?            @map("user_id") @db.Uuid
+  orderId   String?            @map("order_id") @db.Uuid
+  type      String
+  status    NotificationStatus
+  error     String?
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz
+
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("notification_log")
+}
