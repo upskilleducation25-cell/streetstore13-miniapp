@@ -5,10 +5,13 @@ import { ApiErrorResponses } from "../common/swagger.js";
 import { CatalogService } from "./catalog.service.js";
 import { ProductsQueryDto, SearchQueryDto } from "./dto/query.dto.js";
 import {
+  BrandRefDto,
   CategoryItemDto,
+  ColorRefDto,
   HomeResponseDto,
   ProductDetailDto,
   ProductPageDto,
+  SizeRefDto,
 } from "./dto/response.dto.js";
 
 @ApiTags("Каталог")
@@ -28,6 +31,30 @@ export class CatalogController {
   @ApiOkResponse({ type: [CategoryItemDto] })
   getCategories(): Promise<CategoryItemDto[]> {
     return this.catalog.getCategories();
+  }
+
+  @Get("brands")
+  @ApiOperation({ summary: "Бренди, що є у видимих товарах (для фільтрів)" })
+  @ApiOkResponse({ type: [BrandRefDto] })
+  getBrands(): Promise<BrandRefDto[]> {
+    return this.catalog.getBrands();
+  }
+
+  @Get("colors")
+  @ApiOperation({ summary: "Кольори, що є в активних варіантах видимих товарів (для фільтрів)" })
+  @ApiOkResponse({ type: [ColorRefDto] })
+  getColors(): Promise<ColorRefDto[]> {
+    return this.catalog.getColors();
+  }
+
+  @Get("sizes")
+  @ApiOperation({
+    summary: "Розміри, що є в активних варіантах видимих товарів (для фільтрів)",
+    description: "Впорядковано за розмірною сіткою. Значення label передається у фільтр size.",
+  })
+  @ApiOkResponse({ type: [SizeRefDto] })
+  getSizes(): Promise<SizeRefDto[]> {
+    return this.catalog.getSizes();
   }
 
   @Get("products")

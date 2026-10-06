@@ -1,4 +1,8 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
+
+import { signInitData } from "@ss13/shared/node";
+
+export { dataCheckString, signInitData } from "@ss13/shared/node";
 
 /** Користувач Telegram з перевіреного initData. */
 export interface TelegramInitUser {
@@ -36,24 +40,6 @@ export interface ValidateOptions {
   now?: Date;
   /** Допустимий розсинхрон годинника, коли auth_date трохи з майбутнього. */
   clockSkewSeconds?: number;
-}
-
-/** secret_key = HMAC_SHA256(key = "WebAppData", message = bot_token). */
-function secretKey(botToken: string): Buffer {
-  return createHmac("sha256", "WebAppData").update(botToken).digest();
-}
-
-/** Рядок для підпису: усі поля, крім hash, відсортовані за ключем, через \n. */
-export function dataCheckString(params: URLSearchParams): string {
-  return [...params.entries()]
-    .filter(([key]) => key !== "hash")
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([key, value]) => `${key}=${value}`)
-    .join("\n");
-}
-
-export function signInitData(params: URLSearchParams, botToken: string): string {
-  return createHmac("sha256", secretKey(botToken)).update(dataCheckString(params)).digest("hex");
 }
 
 /**

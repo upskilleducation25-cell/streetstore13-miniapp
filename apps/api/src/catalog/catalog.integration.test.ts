@@ -3,6 +3,9 @@ import { after, before, describe, test } from "node:test";
 
 import type {
   ApiErrorBody,
+  BrandRef,
+  ColorRef,
+  SizeRef,
   CategoryItem,
   HomeResponse,
   Paginated,
@@ -321,6 +324,111 @@ describe("Каталог (інтеграційні, тестова БД з seed 
       assert.ok(body.sale.length > 0 && body.sale.every((p) => p.isSale));
       const all = [...body.newArrivals, ...body.popular, ...body.sale].map((p) => p.sku);
       assert.ok(!all.includes("DEMO-HIDDEN-01"));
+    });
+  });
+
+  describe("Довідники для фільтрів: GET /brands, /colors, /sizes", () => {
+    // Значення, що трапляються тільки в прихованому товарі, не мають потрапити в довідники.
+    const hiddenBrandSlug = "test-hidden-only-brand";
+    const hiddenSku = "TEST-HIDDEN-ONLY-BRAND-01";
+    let extraVariantId = "";
+
+    before(async () => {
+      const [hidden, red, xxxl, category] = await Promise.all([
+        t.prisma.product.findUniqueOrThrow({ where: { sku: "DEMO-HIDDEN-01" } }),
+        t.prisma.color.findUniqueOrThrow({ where: { slug: "red" } }),
+        t.prisma.size.findFirstOrThrow({ where: { sizeSystem: "CLOTHING", label: "XXXL" } }),
+        t.prisma.category.findUniqueOrThrow({ where: { slug: "kurtky" } }),
+      ]);
+      const variant = await t.prisma.productVariant.create({
+        data: { productId: hidden.id, colorId: red.id, sizeId: xxxl.id, stock: 3 },
+      });
+      extraVariantId = variant.id;
+
+      const brand = await t.prisma.brand.create({
+        data: { slug: hiddenBrandSlug, name: "Тестовий прихований бренд" },
+      });
+      await t.prisma.product.create({
+        data: {
+          sku: hiddenSku,
+          slug: "test-hidden-only-brand-01",
+          name: "Тестовий прихований товар бренду",
+          brandId: brand.id,
+          categoryId: category.id,
+          price: 100_000,
+          status: "HIDDEN",
+          variants: { create: { colorId: red.id, sizeId: xxxl.id, stock: 1 } },
+        },
+      });
+    });
+
+    after(async () => {
+      await t.prisma.productVariant.deleteMany({ where: { id: extraVariantId } });
+      await t.prisma.product.deleteMany({ where: { sku: hiddenSku } });
+      await t.prisma.brand.deleteMany({ where: { slug: hiddenBrandSlug } });
+    });
+
+    test("бренди: тільки ті, що є у видимих товарах, у порядку sortOrder", async () => {
+      const { status, body } = await t.getJson<BrandRef[]>("/api/v1/brands");
+      assert.equal(status, 200);
+      assert.deepEqual(
+        body.map((brand) => brand.slug),
+        [
+          "nike",
+          "polo-ralph-lauren",
+          "acne-studios",
+          "moncler",
+          "armani-exchange",
+          "stone-island",
+          "premiata",
+          "arcteryx",
+        ],
+      );
+      assert.deepEqual(Object.keys(body[0]!).sort(), ["name", "slug"]);
+    });
+
+    test("кольори: тільки з активних варіантів видимих товарів, з hex", async () => {
+      const { status, body } = await t.getJson<ColorRef[]>("/api/v1/colors");
+      assert.equal(status, 200);
+      // red є тільки у прихованих товарах, brown і green — ніде.
+      assert.deepEqual(
+        body.map((color) => color.slug),
+        ["black", "white", "grey", "navy", "blue", "beige", "olive"],
+      );
+      assert.ok(body.every((color) => /^#[0-9A-F]{6}$/i.test(color.hex)));
+    });
+
+    test("розміри: тільки використані, за розмірною сіткою", async () => {
+      const { status, body } = await t.getJson<SizeRef[]>("/api/v1/sizes");
+      assert.equal(status, 200);
+      assert.deepEqual(body, [
+        { label: "S", system: "CLOTHING" },
+        { label: "M", system: "CLOTHING" },
+        { label: "L", system: "CLOTHING" },
+        { label: "XL", system: "CLOTHING" },
+        { label: "40", system: "SHOES_EU" },
+        { label: "41", system: "SHOES_EU" },
+        { label: "42", system: "SHOES_EU" },
+        { label: "43", system: "SHOES_EU" },
+        { label: "ONE SIZE", system: "ONE_SIZE" },
+      ]);
+    });
+
+    test("кожне значення довідника знаходить хоча б один товар у каталозі", async () => {
+      const [brands, colors, sizes] = await Promise.all([
+        t.getJson<BrandRef[]>("/api/v1/brands"),
+        t.getJson<ColorRef[]>("/api/v1/colors"),
+        t.getJson<SizeRef[]>("/api/v1/sizes"),
+      ]);
+      const queries = [
+        ...brands.body.map((b) => `brand=${b.slug}`),
+        ...colors.body.map((c) => `color=${c.slug}`),
+        ...sizes.body.map((s) => `size=${encodeURIComponent(s.label)}`),
+      ];
+      for (const query of queries) {
+        const page = await t.getJson<Page>(`/api/v1/products?${query}&limit=1`);
+        assert.equal(page.body.items.length, 1, query);
+      }
     });
   });
 

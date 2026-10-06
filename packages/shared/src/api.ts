@@ -42,6 +42,12 @@ export interface ColorRef {
   hex: string;
 }
 
+export interface SizeRef {
+  label: string;
+  /** Розмірна сітка: CLOTHING, SHOES_EU, ONE_SIZE. */
+  system: string;
+}
+
 export interface ImageUrls {
   thumb?: string;
   medium?: string;

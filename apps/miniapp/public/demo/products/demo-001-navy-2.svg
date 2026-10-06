@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+<rect width="600" height="800" fill="#c5c8ce"/>
+<path d="M215 175 L255 160 Q300 185 345 160 L385 175 L470 230 L505 470 L455 480 L425 300 L425 620 L175 620 L175 300 L145 480 L95 470 L130 230 Z" fill="#1F2A44" transform="translate(600 0) scale(-1 1) translate(-30 -40) scale(1.1)"/>
+<text x="300" y="730" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="26" letter-spacing="4" fill="#6B6B6B">DEMO · DEMO-001</text>
+</svg>
