@@ -14,6 +14,7 @@ import type {
   ProductImage,
   ProductSizeOption,
   ProductVariantInfo,
+  SizeRef,
 } from "@ss13/shared";
 
 const money = (description: string) => ({ description: `${description}, копійки (UAH)` });
@@ -44,6 +45,12 @@ export class ColorRefDto implements ColorRef {
   @ApiProperty({ example: "black" }) slug!: string;
   @ApiProperty({ example: "Чорний" }) name!: string;
   @ApiProperty({ example: "#000000" }) hex!: string;
+}
+
+export class SizeRefDto implements SizeRef {
+  @ApiProperty({ example: "M" }) label!: string;
+  @ApiProperty({ example: "CLOTHING", enum: ["CLOTHING", "SHOES_EU", "ONE_SIZE", "OTHER"] })
+  system!: string;
 }
 
 export class ImageUrlsDto implements ImageUrls {

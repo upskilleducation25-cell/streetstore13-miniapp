@@ -1,10 +1,13 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
+  BrandRef,
   CategoryItem,
+  ColorRef,
   HomeResponse,
   Paginated,
   ProductCard,
   ProductDetail,
+  SizeRef,
 } from "@ss13/shared";
 
 import { AppException, notFound } from "../common/app-exception.js";
@@ -89,6 +92,39 @@ export class CatalogService {
       }
     }
     return roots;
+  }
+
+  // Довідники для фільтрів: тільки значення, що трапляються в активних варіантах видимих товарів.
+  private readonly usedInVariants = {
+    some: { isActive: true, product: visibleProductWhere },
+  } satisfies Prisma.ProductVariantListRelationFilter;
+
+  async getBrands(): Promise<BrandRef[]> {
+    return this.prisma.brand.findMany({
+      where: {
+        isActive: true,
+        products: { some: { ...visibleProductWhere, variants: { some: { isActive: true } } } },
+      },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: { slug: true, name: true },
+    });
+  }
+
+  async getColors(): Promise<ColorRef[]> {
+    return this.prisma.color.findMany({
+      where: { variants: this.usedInVariants },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: { slug: true, name: true, hex: true },
+    });
+  }
+
+  async getSizes(): Promise<SizeRef[]> {
+    const sizes = await this.prisma.size.findMany({
+      where: { variants: this.usedInVariants },
+      orderBy: [{ sizeSystem: "asc" }, { sortOrder: "asc" }, { label: "asc" }],
+      select: { label: true, sizeSystem: true },
+    });
+    return sizes.map((size) => ({ label: size.label, system: size.sizeSystem }));
   }
 
   buildProductsWhere(query: ProductsQueryDto): Prisma.ProductWhereInput {

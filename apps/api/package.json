@@ -16,6 +16,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
     "prisma:seed:demo": "tsx prisma/seed-demo.ts",
+    "demo:images": "tsx prisma/generate-demo-images.ts",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {

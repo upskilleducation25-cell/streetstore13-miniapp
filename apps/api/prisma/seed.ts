@@ -5,6 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 import type { Prisma } from "../src/generated/prisma/client.js";
 import { PrismaClient, SizeSystem } from "../src/generated/prisma/client.js";
+import { colors } from "./colors.js";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL не задано");
@@ -34,19 +35,6 @@ const brands: Array<[slug: string, name: string]> = [
   ["stone-island", "Stone Island"],
   ["premiata", "Premiata"],
   ["arcteryx", "Arc'teryx"],
-];
-
-const colors: Array<[slug: string, name: string, hex: string]> = [
-  ["black", "Чорний", "#000000"],
-  ["white", "Білий", "#FFFFFF"],
-  ["grey", "Сірий", "#8E8E93"],
-  ["navy", "Темно-синій", "#1F2A44"],
-  ["blue", "Синій", "#2F5DA8"],
-  ["beige", "Бежевий", "#D8C3A5"],
-  ["brown", "Коричневий", "#6B4A35"],
-  ["olive", "Оливковий", "#5B5F3A"],
-  ["green", "Зелений", "#2E6B3F"],
-  ["red", "Червоний", "#B3261E"],
 ];
 
 const sizes: Array<[system: SizeSystem, labels: string[]]> = [
