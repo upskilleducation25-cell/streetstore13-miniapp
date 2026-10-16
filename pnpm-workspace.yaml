@@ -7,3 +7,9 @@ onlyBuiltDependencies:
   - "@nestjs/core"
   - esbuild
   - prisma
+
+# argon2 бере готову збірку з prebuilds (win32-x64, linux, darwin), компіляція не потрібна;
+# @scarf/scarf — лише телеметрія пакета. Так `pnpm install` не пропонує approve-builds.
+ignoredBuiltDependencies:
+  - "@scarf/scarf"
+  - argon2
