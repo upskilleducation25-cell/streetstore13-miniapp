@@ -9,6 +9,7 @@ const CODE_BY_STATUS: Record<number, string> = {
   403: "FORBIDDEN",
   404: "NOT_FOUND",
   409: "CONFLICT",
+  413: "PAYLOAD_TOO_LARGE",
   429: "TOO_MANY_REQUESTS",
   503: "SERVICE_UNAVAILABLE",
 };
@@ -47,6 +48,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
                   ? (raw as { message: string }).message
                   : exception.message,
           };
+      // Ліміти multer приходять англійською — перекладаємо найчастіший.
+      if (status === HttpStatus.PAYLOAD_TOO_LARGE && !isApiErrorBody(raw)) {
+        body.message = "Файл завеликий: максимум 10 МБ";
+      }
       response.status(status).json(body);
       return;
     }

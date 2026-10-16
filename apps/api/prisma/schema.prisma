@@ -96,8 +96,44 @@ model Admin {
 
   statusChanges      OrderStatusHistory[]
   inventoryMovements InventoryMovement[]
+  sessions           AdminSession[]
 
   @@map("admins")
+}
+
+/// Серверна сесія адміна. Сам токен живе тільки в httpOnly cookie; тут — його SHA-256.
+model AdminSession {
+  id         String   @id @default(uuid()) @db.Uuid
+  tokenHash  String   @unique @map("token_hash")
+  /// CSRF-токен сесії: клієнт повертає його в заголовку X-CSRF-Token.
+  csrfToken  String   @map("csrf_token")
+  adminId    String   @map("admin_id") @db.Uuid
+  userAgent  String?  @map("user_agent")
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([expiresAt])
+  @@map("admin_sessions")
+}
+
+/// Спроби входу в адмінку: для обмеження перебору паролів за email і IP.
+model AdminLoginAttempt {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// Email у нижньому регістрі, як його ввели (адміна з таким email може й не бути).
+  email     String
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+  @@index([createdAt])
+  @@map("admin_login_attempts")
 }
 
 // ─── Каталог ───────────────────────────────────────────────────────────────
@@ -385,6 +421,8 @@ model InventoryMovement {
   reason    InventoryReason
   orderId   String?         @map("order_id") @db.Uuid
   adminId   String?         @map("admin_id") @db.Uuid
+  /// Причина ручної зміни (обов'язкова для MANUAL): «Надходження», «Інвентаризація»…
+  note      String?
   createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz
 
   variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)

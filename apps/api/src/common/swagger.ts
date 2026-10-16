@@ -12,8 +12,10 @@ export class ApiErrorDto implements ApiErrorBody {
 const DESCRIPTIONS: Record<number, string> = {
   400: "Некоректні параметри (VALIDATION_ERROR)",
   401: "Немає або некоректна авторизація",
+  403: "Недостатньо прав, недійсний CSRF-токен або недозволений Origin",
   404: "Не знайдено",
   409: "Конфлікт зі станом складу чи замовлення (details — що саме)",
+  429: "Забагато спроб",
   503: "Сервіс не налаштовано",
 };
 
