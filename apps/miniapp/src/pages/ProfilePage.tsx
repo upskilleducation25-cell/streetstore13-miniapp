@@ -1,12 +1,14 @@
+import { Link } from "react-router";
+
 import { PageHeader } from "../app/PageHeader";
 import { useLaunchMode } from "../app/launch";
 import { useMe } from "../entities/product/api";
 import { canLogin } from "../shared/telegram/launch-mode";
 import { t } from "../shared/strings";
-import { UserIcon } from "../shared/ui/icons";
+import { ChevronRightIcon, UserIcon } from "../shared/ui/icons";
 import { Skeleton } from "../shared/ui/Skeleton";
 
-/** Мінімальний профіль: хто увійшов. Мої замовлення — Етап 3. */
+/** Профіль: хто увійшов і посилання на «Мої замовлення». */
 export default function ProfilePage() {
   const mode = useLaunchMode();
   const me = useMe(canLogin(mode));
@@ -40,7 +42,15 @@ export default function ProfilePage() {
         )}
         {mode === "dev-mock" && <p className="mt-6 text-xs text-hint">{t.profile.devMode}</p>}
 
-        <p className="mt-10 border-t border-line pt-6 text-sm text-hint">{t.profile.stage3}</p>
+        {canLogin(mode) && (
+          <Link
+            to="/orders"
+            className="mt-10 flex min-h-14 items-center justify-between border-y border-line text-sm"
+          >
+            {t.profile.orders}
+            <ChevronRightIcon size={18} className="text-hint" />
+          </Link>
+        )}
       </div>
     </>
   );

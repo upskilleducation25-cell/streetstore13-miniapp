@@ -10,6 +10,27 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((value) => value || undefined),
+  /**
+   * Чат власника / менеджерів для сповіщень про нові замовлення: числовий ID чату або
+   * @username каналу. Якщо не задано — береться settings.notifications.adminChatId з БД.
+   */
+  TELEGRAM_ADMIN_CHAT_ID: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim() || undefined)
+    .refine((value) => value === undefined || /^(-?\d{1,20}|@[A-Za-z0-9_]{5,32})$/.test(value), {
+      message: "TELEGRAM_ADMIN_CHAT_ID: числовий ID чату або @username каналу",
+    }),
+  /** Адреса Bot API. Змінюється тільки в тестах (фейковий сервер) або для локального Bot API. */
+  TELEGRAM_API_BASE_URL: z.url().default("https://api.telegram.org"),
+  /** Публічна HTTPS-адреса Mini App: для кнопки «Відкрити замовлення» в повідомленні бота. */
+  MINIAPP_URL: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim().replace(/\/$/, "") || undefined)
+    .refine((value) => value === undefined || value.startsWith("https://"), {
+      message: "MINIAPP_URL має починатися з https://",
+    }),
   /** Скільки секунд initData вважається свіжим (auth_date). За замовчуванням 24 години. */
   TELEGRAM_INIT_DATA_TTL_SECONDS: z.coerce.number().int().positive().default(86_400),
   /** Секрет підпису JWT покупця, мінімум 32 символи. */

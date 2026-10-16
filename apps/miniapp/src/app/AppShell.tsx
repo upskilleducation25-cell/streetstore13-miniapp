@@ -3,6 +3,7 @@ import { Outlet, ScrollRestoration, useMatches } from "react-router";
 
 import { ProductGridSkeleton } from "../shared/ui/Skeleton";
 import { ToastHost } from "../shared/ui/Toast";
+import { useLegacyCartMigration } from "../features/cart/cart";
 import { BackButtonController } from "./BackButtonController";
 import { BottomNav } from "./BottomNav";
 
@@ -14,6 +15,7 @@ interface RouteHandle {
 export function AppShell() {
   const matches = useMatches();
   const hideNav = matches.some((match) => (match.handle as RouteHandle | undefined)?.hideNav);
+  useLegacyCartMigration();
   return (
     <div className="mx-auto min-h-dvh max-w-xl pl-[var(--safe-left)] pr-[var(--safe-right)]">
       <BackButtonController />

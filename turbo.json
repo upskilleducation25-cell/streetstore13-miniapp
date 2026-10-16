@@ -5,6 +5,9 @@
     "DATABASE_URL",
     "REDIS_URL",
     "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_ADMIN_CHAT_ID",
+    "TELEGRAM_API_BASE_URL",
+    "MINIAPP_URL",
     "CORS_ORIGINS",
     "PORT"
   ],

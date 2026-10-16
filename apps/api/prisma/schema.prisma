@@ -350,6 +350,8 @@ model OrderItem {
   unitPrice   Int     @map("unit_price")
   quantity    Int
   lineTotal   Int     @map("line_total")
+  /// Порядок позиції в замовленні (як у кошику).
+  position    Int     @default(0)
 
   order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
