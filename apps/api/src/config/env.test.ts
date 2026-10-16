@@ -51,3 +51,44 @@ test("env: налаштування сповіщень", () => {
   );
   assert.throws(() => loadEnv({ ...base, MINIAPP_URL: "http://insecure.test" }), /MINIAPP_URL/);
 });
+
+test("env: адмін-cookie і сховище за замовчуванням", () => {
+  const base = { DATABASE_URL: "postgresql://u:p@localhost:5432/db", JWT_SECRET: "x".repeat(32) };
+  const dev = loadEnv(base);
+  assert.equal(dev.ADMIN_COOKIE_SECURE, false);
+  assert.equal(dev.ADMIN_COOKIE_SAMESITE, "strict");
+  assert.equal(dev.ADMIN_SESSION_TTL_HOURS, 12);
+  assert.equal(dev.STORAGE_DRIVER, "local");
+
+  const prod = loadEnv({ ...base, NODE_ENV: "production" });
+  assert.equal(prod.ADMIN_COOKIE_SECURE, true);
+  assert.equal(prod.STORAGE_DRIVER, "none");
+
+  assert.throws(
+    () => loadEnv({ ...base, NODE_ENV: "production", STORAGE_DRIVER: "local" }),
+    /STORAGE_DRIVER/,
+  );
+  assert.throws(
+    () => loadEnv({ ...base, ADMIN_COOKIE_SAMESITE: "none", ADMIN_COOKIE_SECURE: "false" }),
+    /ADMIN_COOKIE_SAMESITE/,
+  );
+});
+
+test("env: R2 вимагає всі ключі", () => {
+  const base = { DATABASE_URL: "postgresql://u:p@localhost:5432/db", JWT_SECRET: "x".repeat(32) };
+  assert.throws(
+    () => loadEnv({ ...base, STORAGE_DRIVER: "r2", R2_BUCKET: "media" }),
+    /R2_ACCESS_KEY_ID/,
+  );
+  const env = loadEnv({
+    ...base,
+    STORAGE_DRIVER: "r2",
+    R2_ACCOUNT_ID: "acc",
+    R2_ACCESS_KEY_ID: "key",
+    R2_SECRET_ACCESS_KEY: "secret",
+    R2_BUCKET: "media",
+    R2_PUBLIC_URL: "https://media.example.com/",
+  });
+  assert.equal(env.STORAGE_DRIVER, "r2");
+  assert.equal(env.R2_PUBLIC_URL, "https://media.example.com");
+});

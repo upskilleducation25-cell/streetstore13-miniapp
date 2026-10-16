@@ -34,6 +34,8 @@ cp apps/api/.env.example apps/api/.env
 pnpm db:migrate       # міграції Prisma
 pnpm db:seed          # довідники: категорії, бренди, кольори, розміри, доставка
 pnpm db:seed:demo     # demo-товари DEMO-… (умовні ціни й залишки, SVG-плейсхолдери фото)
+ADMIN_OWNER_EMAIL=… ADMIN_OWNER_PASSWORD=… pnpm admin:create-owner
+                      # перший власник адмінки (реєстрації немає; --reset-password — скинути)
 pnpm dev              # API :3000 (Swagger: /docs), Mini App :5173, адмінка :5174
                       # Mini App поза Telegram у dev входить тестовим користувачем,
                       # initData підписує dev-сервер Vite токеном з apps/api/.env

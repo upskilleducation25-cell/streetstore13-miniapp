@@ -3,13 +3,17 @@
 import "dotenv/config";
 import "reflect-metadata";
 
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import type { INestApplication } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 
 import { AppModule } from "../app.module.js";
 import { configureApp } from "../app.setup.js";
 import { signInitData } from "../auth/init-data.js";
-import type { AuthResponse } from "@ss13/shared";
+import type { AdminSessionResponse, AuthResponse } from "@ss13/shared";
 import { NotificationsService } from "../notifications/notifications.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { type FakeTelegram, startFakeTelegram } from "./fake-telegram.js";
@@ -30,6 +34,22 @@ export interface Buyer {
   ) => Promise<{ status: number; body: T }>;
 }
 
+export interface AdminClient {
+  session: AdminSessionResponse;
+  cookie: string;
+  /** fetch від імені адміна: cookie сесії і X-CSRF-Token уже в заголовках. */
+  request: <T = unknown>(
+    path: string,
+    init?: {
+      method?: string;
+      body?: unknown;
+      form?: FormData;
+      headers?: Record<string, string>;
+      csrf?: boolean;
+    },
+  ) => Promise<{ status: number; body: T }>;
+}
+
 export interface TestApp {
   app: INestApplication;
   prisma: PrismaService;
@@ -40,6 +60,10 @@ export interface TestApp {
   notifications: NotificationsService;
   /** Вхід тестового покупця через підписаний тестовим токеном initData. */
   loginBuyer: (telegramId: number, firstName?: string) => Promise<Buyer>;
+  /** Вхід адміна email + пароль; кидає помилку, якщо не 200. */
+  loginAdmin: (email: string, password: string) => Promise<AdminClient>;
+  /** Тека local-сховища фото цього запуску тестів. */
+  storageDir: string;
   close: () => Promise<void>;
 }
 
@@ -49,6 +73,9 @@ export async function createTestApp(): Promise<TestApp> {
   const telegram = await startFakeTelegram();
   process.env.TELEGRAM_API_BASE_URL = telegram.baseUrl;
   process.env.TELEGRAM_ADMIN_CHAT_ID = TEST_ADMIN_CHAT_ID;
+  const storageDir = mkdtempSync(join(tmpdir(), "ss13-uploads-"));
+  process.env.STORAGE_DRIVER = "local";
+  process.env.LOCAL_STORAGE_DIR = storageDir;
 
   const app = await NestFactory.create(AppModule, { logger: ["error"] });
   configureApp(app);
@@ -93,9 +120,50 @@ export async function createTestApp(): Promise<TestApp> {
     };
   };
 
+  const loginAdmin = async (email: string, password: string): Promise<AdminClient> => {
+    const response = await fetch(url("/api/v1/admin/auth/login"), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (response.status !== 200) throw new Error(`Вхід адміна ${email}: ${response.status}`);
+    const session = (await response.json()) as AdminSessionResponse;
+    const setCookie = response.headers.get("set-cookie") ?? "";
+    const cookie = setCookie.split(";")[0]!;
+    return {
+      session,
+      cookie,
+      request: async <T>(
+        path: string,
+        init: {
+          method?: string;
+          body?: unknown;
+          form?: FormData;
+          headers?: Record<string, string>;
+          csrf?: boolean;
+        } = {},
+      ) => {
+        const res = await fetch(url(path), {
+          method: init.method ?? "GET",
+          headers: {
+            cookie,
+            ...(init.csrf === false ? {} : { "x-csrf-token": session.csrfToken }),
+            ...(init.body === undefined ? {} : { "content-type": "application/json" }),
+            ...init.headers,
+          },
+          body: init.form ?? (init.body === undefined ? undefined : JSON.stringify(init.body)),
+        });
+        const text = await res.text();
+        return { status: res.status, body: (text ? JSON.parse(text) : undefined) as T };
+      },
+    };
+  };
+
   return {
     app,
     prisma: app.get(PrismaService),
+    loginAdmin,
+    storageDir,
     url,
     getJson: async <T>(path: string) => {
       const response = await fetch(url(path));

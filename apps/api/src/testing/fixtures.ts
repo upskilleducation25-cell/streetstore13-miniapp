@@ -101,3 +101,30 @@ export async function cleanupTestData(
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
   await prisma.product.deleteMany({ where: { sku: { startsWith: options.skuPrefix } } });
 }
+
+/** Тестові адміни мають email на цьому домені; cleanupTestAdmins прибирає їх. */
+export const TEST_ADMIN_DOMAIN = "@ss13-admin.test";
+export const TEST_ADMIN_PASSWORD = "test-only-password-1234";
+
+export async function createTestAdmin(
+  prisma: PrismaService,
+  options: { email: string; role: "OWNER" | "MANAGER"; isActive?: boolean; password?: string },
+): Promise<{ id: string; email: string }> {
+  const { hashPassword } = await import("../admin-auth/password.js");
+  const admin = await prisma.admin.create({
+    data: {
+      email: options.email,
+      name: options.role === "OWNER" ? "Тестовий власник" : "Тестовий менеджер",
+      role: options.role,
+      isActive: options.isActive ?? true,
+      passwordHash: await hashPassword(options.password ?? TEST_ADMIN_PASSWORD),
+    },
+  });
+  return { id: admin.id, email: admin.email };
+}
+
+/** Видаляє тестових адмінів (сесії — каскадом) і їхні спроби входу. */
+export async function cleanupTestAdmins(prisma: PrismaService): Promise<void> {
+  await prisma.adminLoginAttempt.deleteMany({ where: { email: { endsWith: TEST_ADMIN_DOMAIN } } });
+  await prisma.admin.deleteMany({ where: { email: { endsWith: TEST_ADMIN_DOMAIN } } });
+}
