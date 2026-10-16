@@ -1,0 +1,7 @@
+# Однакові закінчення рядків на Windows, macOS і Linux: інакше `pnpm format:check`
+# на Windows (git core.autocrlf=true) бачить CRLF і падає.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary

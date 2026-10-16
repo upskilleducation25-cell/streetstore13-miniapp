@@ -19,6 +19,8 @@
 
 ## Запуск локально
 
+На Windows — покрокова інструкція для PowerShell: [`docs/local-setup-windows.md`](docs/local-setup-windows.md).
+
 ```bash
 corepack enable
 pnpm install
@@ -58,6 +60,8 @@ ADMIN_OWNER_PASSWORD='довгий-надійний-пароль' \
 ADMIN_OWNER_NAME='Власник' \
 pnpm admin:create-owner
 ```
+
+У PowerShell (Windows) змінні задаються інакше — див. [`docs/local-setup-windows.md`](docs/local-setup-windows.md#7-перший-власник-адмінки).
 
 Команда ідемпотентна: якщо email уже є, нічого не змінює. Щоб скинути забутий пароль власника,
 додайте `--reset-password` (акаунт стане активним власником, усі його сесії завершаться).
