@@ -1,3 +1,15 @@
+# ─── STREETSTORE.13 ───
+node_modules
+dist
+.turbo
+coverage
+.env
+.env.*
+!.env.example
+apps/api/src/generated
+.DS_Store
+
+# ─── Шаблон GitHub (Node) ───
 # Logs
 logs
 *.log
