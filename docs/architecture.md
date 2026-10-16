@@ -161,7 +161,7 @@
           ▼
 Claude (tool calling) → search_products({
   category: "puhovyky", color: "black", size: "L",
-  priceMax: 300000, inStock: true })
+  maxPrice: 300000, inStock: true })
           │
           ▼
 Backend перевіряє кожне значення по довідниках у БД
@@ -470,7 +470,7 @@ REST, версія `/api/v1`, JSON, документація Swagger (OpenAPI) �
 | GET    | `/orders/:number`    | деталі мого замовлення                                         |
 
 **Фільтри `/products`:**
-`q` (текст), `category`, `brand[]`, `color[]`, `size[]`, `priceMin`, `priceMax`, `inStock`, `isNew`, `isSale`, `isPopular`, `sort` = `recommended | new | popular | price_asc | price_desc`.
+`q` (текст), `category`, `brand[]`, `color[]`, `size[]`, `minPrice`, `maxPrice` (копійки), `inStock`, `isNew`, `isSale`, `isPopular`, `sort` = `new | price_asc | price_desc` (рішення власника на Етапі 1). Пошук — окремий `GET /products/search?q=`.
 Цей самий набір фільтрів потім заповнює AI-пошук.
 
 **Приклад відповіді `/products/:slug` (скорочено):**

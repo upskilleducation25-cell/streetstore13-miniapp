@@ -22,6 +22,7 @@ jobs:
           --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       DATABASE_URL: postgresql://ss13:ss13@localhost:5432/streetstore13?schema=public
+      JWT_SECRET: ci-only-jwt-secret-ci-only-jwt-secret-0000
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -36,4 +37,5 @@ jobs:
       - run: pnpm build
       - run: pnpm --filter @ss13/api prisma:deploy
       - run: pnpm db:seed
+      - run: pnpm db:seed:demo
       - run: pnpm test

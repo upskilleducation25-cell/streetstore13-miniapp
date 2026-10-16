@@ -5,7 +5,17 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url(),
   REDIS_URL: z.url().optional(),
-  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  /** Токен бота від @BotFather. Без нього вхід через Telegram повертає 503. */
+  TELEGRAM_BOT_TOKEN: z
+    .string()
+    .optional()
+    .transform((value) => value || undefined),
+  /** Скільки секунд initData вважається свіжим (auth_date). За замовчуванням 24 години. */
+  TELEGRAM_INIT_DATA_TTL_SECONDS: z.coerce.number().int().positive().default(86_400),
+  /** Секрет підпису JWT покупця, мінімум 32 символи. */
+  JWT_SECRET: z.string().min(32, "JWT_SECRET має містити щонайменше 32 символи"),
+  /** Час життя JWT покупця в секундах. За замовчуванням 7 днів. */
+  JWT_EXPIRES_IN_SECONDS: z.coerce.number().int().positive().default(604_800),
   CORS_ORIGINS: z
     .string()
     .default("")

@@ -33,10 +33,11 @@ pnpm db:up            # PostgreSQL + Redis у Docker
 cp apps/api/.env.example apps/api/.env
 pnpm db:migrate       # міграції Prisma
 pnpm db:seed          # довідники: категорії, бренди, кольори, розміри, доставка
-pnpm dev              # API :3000, Mini App :5173, адмінка :5174
+pnpm db:seed:demo     # demo-товари DEMO-… (умовні ціни й залишки, без фото)
+pnpm dev              # API :3000 (Swagger: /docs), Mini App :5173, адмінка :5174
 pnpm lint             # ESLint
 pnpm typecheck        # перевірка типів
-pnpm test             # тести
+pnpm test             # тести (інтеграційні API-тести потребують БД з seed і demo-seed)
 pnpm build            # збірка всіх пакетів
 pnpm format           # Prettier (CI запускає format:check)
 ```
