@@ -1,1 +1,107 @@
 @import "tailwindcss";
+
+/*
+ * Кольори беруться з теми Telegram (--tg-theme-*, їх виставляє telegram-web-app.js).
+ * Запасні значення — для браузера поза Telegram, світла і темна теми.
+ */
+:root {
+  --app-bg: var(--tg-theme-bg-color, #ffffff);
+  --app-text: var(--tg-theme-text-color, #111111);
+  --app-hint: var(--tg-theme-hint-color, #6b6b6b);
+  --app-surface: var(--tg-theme-secondary-bg-color, #f3f3f3);
+  --app-line: color-mix(in srgb, var(--app-text) 12%, transparent);
+  --app-sale: #c8102e;
+
+  /* Safe areas: системні (виріз, жести) + контентні (шапка Telegram у fullscreen). */
+  --safe-top: calc(
+    var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+      var(--tg-content-safe-area-inset-top, 0px)
+  );
+  --safe-bottom: calc(
+    var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) +
+      var(--tg-content-safe-area-inset-bottom, 0px)
+  );
+  --safe-left: var(--tg-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --safe-right: var(--tg-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --nav-height: 56px;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-color-scheme="light"]) {
+    --app-bg: var(--tg-theme-bg-color, #0e0e0e);
+    --app-text: var(--tg-theme-text-color, #f2f2f2);
+    --app-hint: var(--tg-theme-hint-color, #9a9a9a);
+    --app-surface: var(--tg-theme-secondary-bg-color, #1c1c1c);
+    --app-sale: #ff5c6c;
+    color-scheme: dark;
+  }
+}
+
+:root[data-color-scheme="dark"] {
+  --app-sale: #ff5c6c;
+  color-scheme: dark;
+}
+
+@theme {
+  --color-bg: var(--app-bg);
+  --color-fg: var(--app-text);
+  --color-hint: var(--app-hint);
+  --color-surface: var(--app-surface);
+  --color-line: var(--app-line);
+  --color-sale: var(--app-sale);
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+}
+
+html,
+body {
+  background: var(--app-bg);
+  color: var(--app-text);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--app-text);
+  outline-offset: 2px;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes shimmer {
+  0% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+
+.skeleton {
+  background: var(--app-surface);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

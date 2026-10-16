@@ -18,6 +18,7 @@
     "db:down": "docker compose -f infra/docker-compose.yml down",
     "db:migrate": "pnpm --filter @ss13/api prisma:migrate",
     "db:seed": "pnpm --filter @ss13/api prisma:seed",
+    "db:seed:demo": "pnpm --filter @ss13/api prisma:seed:demo",
     "db:studio": "pnpm --filter @ss13/api prisma:studio"
   },
   "devDependencies": {

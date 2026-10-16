@@ -26,6 +26,9 @@
     },
     "test": {
       "dependsOn": ["^build"]
+    },
+    "@ss13/miniapp#test": {
+      "dependsOn": ["build"]
     }
   }
 }
