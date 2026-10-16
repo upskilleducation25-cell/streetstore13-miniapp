@@ -48,3 +48,43 @@ export const haptic = {
   success: () => getWebApp()?.HapticFeedback.notificationOccurred("success"),
   error: () => getWebApp()?.HapticFeedback.notificationOccurred("error"),
 };
+
+/** Чи вміє клієнт Telegram поділитися номером телефону (Bot API 6.9+). */
+export function canRequestContact(): boolean {
+  const webApp = getWebApp();
+  return Boolean(webApp?.requestContact && supports(webApp, "6.9"));
+}
+
+/**
+ * Запитує номер телефону покупця кнопкою Telegram. Повертає номер або null (відмова,
+ * старий клієнт, поза Telegram). Номер не підписаний — лише для автозаповнення поля.
+ */
+export function requestPhone(): Promise<string | null> {
+  const webApp = getWebApp();
+  if (!webApp?.requestContact || !canRequestContact()) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    try {
+      webApp.requestContact!((shared, response) => {
+        const phone = response?.responseUnsafe?.contact?.phone_number;
+        resolve(shared && phone ? phone : null);
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+/** Підтвердження дії: системний діалог Telegram, поза Telegram — window.confirm. */
+export function confirmAction(message: string): Promise<boolean> {
+  const webApp = getWebApp();
+  if (webApp?.showConfirm && supports(webApp, "6.2")) {
+    return new Promise((resolve) => {
+      try {
+        webApp.showConfirm!(message, (confirmed) => resolve(confirmed));
+      } catch {
+        resolve(window.confirm(message));
+      }
+    });
+  }
+  return Promise.resolve(window.confirm(message));
+}

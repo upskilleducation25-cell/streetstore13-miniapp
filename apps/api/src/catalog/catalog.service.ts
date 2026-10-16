@@ -11,6 +11,7 @@ import type {
 } from "@ss13/shared";
 
 import { AppException, notFound } from "../common/app-exception.js";
+import { isUuid } from "../common/uuid.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { ProductStatus } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -18,7 +19,6 @@ import type { ProductsQueryDto, SearchQueryDto } from "./dto/query.dto.js";
 import { productInclude, toProductCard, toProductDetail } from "./product.mapper.js";
 
 const HOME_SECTION_LIMIT = 10;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Видимий на вітрині: активний, не видалений, активні бренд, категорія і її батьківська. */
 export const visibleProductWhere = {
@@ -193,7 +193,7 @@ export class CatalogService {
 
   async getProduct(id: string): Promise<ProductDetail> {
     // Неіснуючий, прихований і некоректний id відповідають однаково — 404.
-    const product = UUID_RE.test(id)
+    const product = isUuid(id)
       ? await this.prisma.product.findFirst({
           where: { AND: [visibleProductWhere, { id }] },
           include: productInclude,

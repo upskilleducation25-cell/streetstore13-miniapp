@@ -117,4 +117,36 @@ describe("API-клієнт", () => {
     await client.request("/categories");
     assert.equal(header, undefined);
   });
+
+  test("PATCH/DELETE і додаткові заголовки (Idempotency-Key)", async () => {
+    const seen: Array<{ method?: string; headers: Record<string, string>; body?: unknown }> = [];
+    const client = createApiClient({
+      baseUrl: "/api/v1",
+      tokens: { getToken: async () => "jwt", invalidate: () => {} },
+      fetch: async (_url, init) => {
+        seen.push({
+          method: init?.method,
+          headers: init?.headers as Record<string, string>,
+          body: init?.body,
+        });
+        return json(200, {});
+      },
+    });
+    await client.request("/cart/items/1", { method: "PATCH", body: { quantity: 2 }, auth: true });
+    await client.request("/cart/items/1", { method: "DELETE", auth: true });
+    await client.request("/orders", {
+      method: "POST",
+      body: {},
+      auth: true,
+      headers: { "Idempotency-Key": "key-1234567890abcdef" },
+    });
+    assert.deepEqual(
+      seen.map((call) => call.method),
+      ["PATCH", "DELETE", "POST"],
+    );
+    assert.equal(seen[0]!.body, JSON.stringify({ quantity: 2 }));
+    assert.equal(seen[1]!.headers["Content-Type"], undefined);
+    assert.equal(seen[2]!.headers["Idempotency-Key"], "key-1234567890abcdef");
+    assert.equal(seen[2]!.headers.Authorization, "Bearer jwt");
+  });
 });

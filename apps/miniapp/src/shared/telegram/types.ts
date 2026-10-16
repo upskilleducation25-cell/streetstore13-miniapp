@@ -54,6 +54,12 @@ interface TelegramHaptics {
 export type TelegramEvent =
   "themeChanged" | "viewportChanged" | "safeAreaChanged" | "contentSafeAreaChanged";
 
+/** Результат requestContact (Bot API 6.9+). Дані не підписані — лише для автозаповнення. */
+export interface RequestContactResponse {
+  status: "sent" | "cancelled";
+  responseUnsafe?: { contact?: { phone_number?: string } };
+}
+
 export interface TelegramWebApp {
   initData: string;
   initDataUnsafe: { user?: TelegramWebAppUser };
@@ -65,6 +71,8 @@ export interface TelegramWebApp {
   MainButton: TelegramMainButton;
   HapticFeedback: TelegramHaptics;
   ready(): void;
+  requestContact?(callback?: (shared: boolean, response?: RequestContactResponse) => void): void;
+  showConfirm?(message: string, callback?: (confirmed: boolean) => void): void;
   expand(): void;
   isVersionAtLeast(version: string): boolean;
   setHeaderColor(color: string): void;

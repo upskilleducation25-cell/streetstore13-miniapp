@@ -17,8 +17,8 @@ import {
 } from "../entities/product/options";
 import { ProductBadge } from "../entities/product/ui/Badges";
 import { PriceTag } from "../entities/product/ui/PriceTag";
-import { cartStore, useCartLines } from "../features/cart/cart";
-import { quantityInCart } from "../features/cart/cart-store";
+import { useCart, useCartAvailable, useCartMutations } from "../features/cart/cart";
+import { quantityInCart } from "../features/cart/cart-utils";
 import { CartButton } from "../features/cart/CartButton";
 import { ColorPicker } from "../features/product-options/ColorPicker";
 import { ProductGallery } from "../features/product-options/ProductGallery";
@@ -29,7 +29,7 @@ import { t } from "../shared/strings";
 import { MainButton } from "../shared/telegram/MainButton";
 import { haptic } from "../shared/telegram/telegram";
 import { Skeleton } from "../shared/ui/Skeleton";
-import { ErrorState } from "../shared/ui/States";
+import { ErrorState, errorMessage } from "../shared/ui/States";
 import { showToast } from "../shared/ui/Toast";
 
 function ProductSkeleton() {
@@ -50,7 +50,9 @@ function ProductSkeleton() {
 function ProductView({ product }: { product: ProductDetail }) {
   const [selection, setSelection] = useState<Selection>(() => initialSelection(product));
   const [quantity, setQuantity] = useState(1);
-  const lines = useCartLines();
+  const cartAvailable = useCartAvailable();
+  const cart = useCart();
+  const { add } = useCartMutations();
 
   const sizes = useMemo(() => sizeOptions(product, selection.color), [product, selection.color]);
   const images = useMemo(
@@ -58,10 +60,9 @@ function ProductView({ product }: { product: ProductDetail }) {
     [product, selection.color],
   );
   const variant = findVariant(product, selection.color, selection.size);
-  const inCart = variant ? quantityInCart(lines, variant.id) : 0;
+  const inCart = variant ? quantityInCart(cart.data, variant.id) : 0;
   const maxToAdd = variant ? Math.max(0, variant.stock - inCart) : 0;
   const qty = clampQuantity(quantity, maxToAdd);
-  const color = product.colors.find((c) => c.slug === selection.color);
 
   const buttonText = !product.inStock
     ? t.product.outOfStock
@@ -72,27 +73,26 @@ function ProductView({ product }: { product: ProductDetail }) {
         : `${t.product.addToCart} · ${formatUah(variant.price * qty)}`;
 
   const addToCart = () => {
-    if (!variant || maxToAdd < 1 || !color) return;
-    const added = cartStore.add({
-      variantId: variant.id,
-      productId: product.id,
-      name: product.name,
-      brand: product.brand.name,
-      colorName: color.name,
-      sizeLabel: variant.sizeLabel,
-      price: variant.price,
-      image: images[0]?.urls.thumb ?? images[0]?.urls.medium ?? null,
-      quantity: qty,
-      maxQuantity: variant.stock,
-    });
-    if (added > 0) {
-      haptic.success();
-      showToast(t.product.added);
-      setQuantity(1);
-    } else {
-      haptic.error();
-      showToast(t.product.maxInCart);
+    if (!variant || maxToAdd < 1 || add.isPending) return;
+    if (!cartAvailable) {
+      showToast(t.product.openInTelegram);
+      return;
     }
+    // Сервер перевіряє залишок і бере ціну з бази; тут — лише варіант і кількість.
+    add.mutate(
+      { variantId: variant.id, quantity: qty },
+      {
+        onSuccess: () => {
+          haptic.success();
+          showToast(t.product.added);
+          setQuantity(1);
+        },
+        onError: (error) => {
+          haptic.error();
+          showToast(errorMessage(error));
+        },
+      },
+    );
   };
 
   return (
@@ -155,7 +155,12 @@ function ProductView({ product }: { product: ProductDetail }) {
         )}
       </div>
 
-      <MainButton text={buttonText} disabled={!variant || maxToAdd < 1} onClick={addToCart} />
+      <MainButton
+        text={buttonText}
+        disabled={!variant || maxToAdd < 1}
+        progress={add.isPending}
+        onClick={addToCart}
+      />
     </>
   );
 }

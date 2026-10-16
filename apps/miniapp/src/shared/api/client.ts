@@ -4,8 +4,10 @@ export type QueryValue = string | number | boolean | string[] | undefined | null
 
 export interface RequestOptions {
   query?: Record<string, QueryValue>;
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
+  /** Додаткові заголовки, напр. Idempotency-Key. */
+  headers?: Record<string, string>;
   /** Додати JWT покупця; при 401 токен оновлюється і запит повторюється один раз. */
   auth?: boolean;
   signal?: AbortSignal;
@@ -40,7 +42,7 @@ export function createApiClient(options: {
   const doFetch = options.fetch ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
 
   async function send<T>(path: string, init: RequestOptions, token: string | null) {
-    const headers: Record<string, string> = { Accept: "application/json" };
+    const headers: Record<string, string> = { ...init.headers, Accept: "application/json" };
     if (init.body !== undefined) headers["Content-Type"] = "application/json";
     if (token) headers.Authorization = `Bearer ${token}`;
 
