@@ -16,7 +16,7 @@ import type { AdminBrand, AdminCatalogDictionaries, AdminColor, AdminSize } from
 import { AdminAuthGuard } from "../admin-auth/admin-auth.guard.js";
 import { ApiErrorResponses } from "../common/swagger.js";
 import { AdminDictionariesService } from "./admin-dictionaries.service.js";
-import { AdminBrandDto, AdminColorDto, AdminSizeDto } from "./dto.js";
+import { AdminBrandDto, AdminColorDto, AdminSizeDto, AdminSortOrderDto } from "./dto.js";
 
 @ApiTags("Адмінка: довідники")
 @ApiCookieAuth()
@@ -48,6 +48,15 @@ export class AdminDictionariesController {
     return this.dictionaries.createBrand(dto);
   }
 
+  // Оголошено перед :id, щоб "order" не сприймався як id.
+  @Patch("brands/order")
+  @ApiOperation({ summary: "Зберегти порядок брендів [{id, sortOrder}]" })
+  @ApiErrorResponses(400, 401, 403, 404)
+  async reorderBrands(@Body() dto: AdminSortOrderDto): Promise<AdminBrand[]> {
+    await this.dictionaries.reorder("brand", dto);
+    return this.dictionaries.brands();
+  }
+
   @Patch("brands/:id")
   @ApiOperation({ summary: "Змінити бренд (повний набір полів)" })
   @ApiErrorResponses(400, 401, 403, 404, 409)
@@ -77,6 +86,15 @@ export class AdminDictionariesController {
     return this.dictionaries.createColor(dto);
   }
 
+  // Оголошено перед :id, щоб "order" не сприймався як id.
+  @Patch("colors/order")
+  @ApiOperation({ summary: "Зберегти порядок кольорів [{id, sortOrder}]" })
+  @ApiErrorResponses(400, 401, 403, 404)
+  async reorderColors(@Body() dto: AdminSortOrderDto): Promise<AdminColor[]> {
+    await this.dictionaries.reorder("color", dto);
+    return this.dictionaries.colors();
+  }
+
   @Patch("colors/:id")
   @ApiOperation({ summary: "Змінити колір (повний набір полів)" })
   @ApiErrorResponses(400, 401, 403, 404, 409)
@@ -104,6 +122,15 @@ export class AdminDictionariesController {
   @ApiErrorResponses(400, 401, 403, 409)
   createSize(@Body() dto: AdminSizeDto): Promise<AdminSize> {
     return this.dictionaries.createSize(dto);
+  }
+
+  // Оголошено перед :id, щоб "order" не сприймався як id.
+  @Patch("sizes/order")
+  @ApiOperation({ summary: "Зберегти порядок розмірів [{id, sortOrder}]" })
+  @ApiErrorResponses(400, 401, 403, 404)
+  async reorderSizes(@Body() dto: AdminSortOrderDto): Promise<AdminSize[]> {
+    await this.dictionaries.reorder("size", dto);
+    return this.dictionaries.sizes();
   }
 
   @Patch("sizes/:id")

@@ -7,8 +7,8 @@ import { ProductStatus } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { AdminCategoriesService } from "./admin-categories.service.js";
 import { AdminProductsService } from "./admin-products.service.js";
-import { conflict, isUniqueViolation, resolveSlug } from "./catalog-errors.js";
-import type { AdminBrandDto, AdminColorDto, AdminSizeDto } from "./dto.js";
+import { conflict, fieldError, isUniqueViolation, resolveSlug } from "./catalog-errors.js";
+import type { AdminBrandDto, AdminColorDto, AdminSizeDto, AdminSortOrderDto } from "./dto.js";
 
 const brandNotFound = () => notFound("BRAND_NOT_FOUND", "Бренд не знайдено");
 const colorNotFound = () => notFound("COLOR_NOT_FOUND", "Колір не знайдено");
@@ -42,6 +42,28 @@ export class AdminDictionariesService {
       this.products.lowStockThreshold(),
     ]);
     return { categories, brands, colors, sizes, lowStockThreshold };
+  }
+
+  /** Порядок у фільтрах і на картці товару: одним запитом, у транзакції. */
+  async reorder(kind: "brand" | "color" | "size", dto: AdminSortOrderDto): Promise<void> {
+    const ids = dto.items.map((item) => item.id);
+    if (new Set(ids).size !== ids.length) throw fieldError("items", "id повторюється");
+    const missing = { brand: brandNotFound, color: colorNotFound, size: sizeNotFound }[kind];
+    await this.prisma.$transaction(async (tx) => {
+      // Окремі виклики замість динамічного делегата — так Prisma лишається типізованою.
+      const count = (where: { id: { in: string[] } }) =>
+        kind === "brand"
+          ? tx.brand.count({ where })
+          : kind === "color"
+            ? tx.color.count({ where })
+            : tx.size.count({ where });
+      if ((await count({ id: { in: ids } })) !== ids.length) throw missing();
+      for (const { id, sortOrder } of dto.items) {
+        if (kind === "brand") await tx.brand.update({ where: { id }, data: { sortOrder } });
+        else if (kind === "color") await tx.color.update({ where: { id }, data: { sortOrder } });
+        else await tx.size.update({ where: { id }, data: { sortOrder } });
+      }
+    });
   }
 
   // ─── Бренди ───

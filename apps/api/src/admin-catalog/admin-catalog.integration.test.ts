@@ -837,6 +837,35 @@ describe("Адмінка: каталог, склад і фото (інтегра
       method: "POST",
       body: { name: "Тест невикористаний", slug: `${SLUG}unused`, hex: "#010203" },
     });
+
+    const reordered = await admin.request<AdminColor[]>("/api/v1/admin/colors/order", {
+      method: "PATCH",
+      body: {
+        items: [
+          { id: unused.body.id, sortOrder: 999_998 },
+          { id: color.body.id, sortOrder: 999_999 },
+        ],
+      },
+    });
+    assert.equal(reordered.status, 200);
+    const tail = reordered.body.slice(-2).map((c) => c.id);
+    assert.deepEqual(tail, [unused.body.id, color.body.id]);
+    const unknownOrder = await admin.request<ApiErrorBody>("/api/v1/admin/sizes/order", {
+      method: "PATCH",
+      body: { items: [{ id: "00000000-0000-4000-8000-000000000000", sortOrder: 1 }] },
+    });
+    assert.equal(unknownOrder.status, 404);
+    const repeatedOrder = await admin.request<ApiErrorBody>("/api/v1/admin/brands/order", {
+      method: "PATCH",
+      body: {
+        items: [
+          { id: brand.body.id, sortOrder: 1 },
+          { id: brand.body.id, sortOrder: 2 },
+        ],
+      },
+    });
+    assert.equal(repeatedOrder.status, 400);
+
     assert.equal(
       (await admin.request(`/api/v1/admin/colors/${unused.body.id}`, { method: "DELETE" })).status,
       204,
