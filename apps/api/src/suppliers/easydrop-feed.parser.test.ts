@@ -17,7 +17,7 @@ const item = (id: string, size = "38") =>
     "</item>",
   ].join("\n");
 const feed = (items: string) =>
-  `<?xml version="1.0" encoding="UTF-8"?><shop><items>${items}</items></shop>`;
+  `<?xml version="1.0" encoding="UTF-8"?><shop><catalog><category id="12">Nike</category></catalog><items>${items}</items></shop>`;
 
 test("parses shoe sizes and groups model variants", () => {
   const parsed = parseEasyDropFeed(feed(item("1", "38") + item("2", "39")));
@@ -25,6 +25,7 @@ test("parses shoe sizes and groups model variants", () => {
   assert.equal(parsed.shoeVariants.length, 2);
   assert.equal(parsed.distinctModels, 1);
   assert.equal(parsed.shoeVariants[0]!.priceUah, 3500);
+  assert.equal(parsed.shoeVariants[0]!.categoryName, "Nike");
   assert.equal(parsed.shoeVariants[1]!.size, "39");
 });
 
