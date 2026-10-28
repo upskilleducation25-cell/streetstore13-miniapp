@@ -22,6 +22,8 @@
 6. Prevent overlapping runs. Record start/end, status, counts and a sanitized error summary in `supplier_sync_runs`.
 7. Daily scheduled sync and an authenticated admin “Sync now” action are later stages; neither is implemented by this foundation migration.
 
-## Scope of this PR
+## Implementation stages
 
-This PR adds persistence for stable supplier-item mappings and sync-run audit records. It intentionally does not download the feed, mutate catalog data, schedule jobs, or expose admin endpoints. Those behaviors should be added in subsequent, testable PRs.
+- The foundation PR adds persistence for stable supplier-item mappings and sync-run audit records.
+- The runtime preview PR adds strict XML validation and an authenticated, read-only admin preview endpoint. It does not write to the database or change stock.
+- Catalog apply, idempotent inventory updates, absent-item hiding, sync-run persistence, and scheduling remain separate stages and must not run until preview validation is reviewed.
