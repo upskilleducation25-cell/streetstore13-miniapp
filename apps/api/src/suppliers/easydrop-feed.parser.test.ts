@@ -49,12 +49,10 @@ test("rejects malformed stock rather than silently treating it as zero", () => {
   );
 });
 
-test("skips non-shoe items without a numeric EU size", () => {
-  const nonShoe = item("2").replace(
+test("rejects a malformed size instead of silently skipping the item", () => {
+  const malformed = item("2").replace(
     '<param name="Розмір" unit="">38</param>',
     '<param name="Розмір" unit="">M</param>',
   );
-  const parsed = parseEasyDropFeed(feed(item("1") + nonShoe));
-  assert.equal(parsed.shoeVariants.length, 1);
-  assert.equal(parsed.skippedNonShoes, 1);
+  assert.throws(() => parseEasyDropFeed(feed(item("1") + malformed)), /числовим розміром взуття EU/);
 });
