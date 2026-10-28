@@ -533,7 +533,7 @@ export class EasyDropSyncService {
             importedCount: feed.shoeVariants.length,
             hiddenCount: hiddenProducts,
             errorMessage: null,
-            summary,
+            summary: summary as Prisma.InputJsonValue,
           },
         });
         return summary;
