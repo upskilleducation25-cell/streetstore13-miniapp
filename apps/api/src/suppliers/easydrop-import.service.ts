@@ -8,6 +8,7 @@ import {
 import { ENV } from "../config/config.module.js";
 import type { Env } from "../config/env.js";
 import { parseEasyDropFeed } from "./easydrop-feed.parser.js";
+import type { EasyDropFeedPreview } from "./easydrop-feed.parser.js";
 
 const MAX_FEED_BYTES = 5 * 1024 * 1024;
 const FEED_HOSTS = new Set(["easydrop.one", "www.easydrop.one"]);
@@ -16,7 +17,7 @@ const FEED_HOSTS = new Set(["easydrop.one", "www.easydrop.one"]);
 export class EasyDropImportService {
   constructor(@Inject(ENV) private readonly env: Env) {}
 
-  async preview() {
+  async loadValidatedFeed(): Promise<EasyDropFeedPreview> {
     const configuredUrl = this.env.EASYDROP_FEED_URL;
     if (!configuredUrl) {
       throw new ServiceUnavailableException({
@@ -50,9 +51,8 @@ export class EasyDropImportService {
         signal: AbortSignal.timeout(10_000),
         headers: { accept: "application/xml, text/xml;q=0.9" },
       });
-      if (!response.ok) {
-        throw new Error(`Постачальник відповів HTTP ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
       const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
       if (
         contentType &&
@@ -60,13 +60,13 @@ export class EasyDropImportService {
         !contentType.includes("text/plain") &&
         !contentType.includes("octet-stream")
       ) {
-        throw new Error("Постачальник повернув не XML-вміст");
+        throw new Error("not XML");
       }
       const contentLength = response.headers.get("content-length");
       if (contentLength && Number(contentLength) > MAX_FEED_BYTES) {
-        throw new Error("Фід перевищує ліміт 5 МБ");
+        throw new Error("feed too large");
       }
-      if (!response.body) throw new Error("Порожня відповідь постачальника");
+      if (!response.body) throw new Error("empty response");
 
       const reader = response.body.getReader();
       const chunks: Uint8Array[] = [];
@@ -78,7 +78,7 @@ export class EasyDropImportService {
           bytes += value.byteLength;
           if (bytes > MAX_FEED_BYTES) {
             await reader.cancel();
-            throw new Error("Фід перевищує ліміт 5 МБ");
+            throw new Error("feed too large");
           }
           chunks.push(value);
         }
@@ -92,26 +92,7 @@ export class EasyDropImportService {
         xmlBytes.set(chunk, offset);
         offset += chunk.byteLength;
       }
-      const xml = new TextDecoder("utf-8", { fatal: true }).decode(xmlBytes);
-      const parsed = parseEasyDropFeed(xml);
-      return {
-        status: "PREVIEW",
-        totalItems: parsed.totalItems,
-        shoeVariants: parsed.shoeVariants.length,
-        distinctModels: parsed.distinctModels,
-        sample: parsed.shoeVariants.slice(0, 20).map((variant) => ({
-          externalId: variant.externalId,
-          groupId: variant.groupId,
-          vendorCode: variant.vendorCode,
-          name: variant.name,
-          size: variant.size,
-          priceUah: variant.priceUah,
-          available: variant.available,
-          quantity: variant.quantity,
-        })),
-        applied: false,
-        message: "Попередній перегляд: база даних і залишки не змінювалися.",
-      };
+      return parseEasyDropFeed(new TextDecoder("utf-8", { fatal: true }).decode(xmlBytes));
     } catch (error) {
       // Never return the URL or the original fetch error; the feed URL may contain a secret key.
       const message =
@@ -123,5 +104,28 @@ export class EasyDropImportService {
         message,
       });
     }
+  }
+
+  async preview() {
+    const parsed = await this.loadValidatedFeed();
+    return {
+      status: "PREVIEW",
+      totalItems: parsed.totalItems,
+      shoeVariants: parsed.shoeVariants.length,
+      distinctModels: parsed.distinctModels,
+      sample: parsed.shoeVariants.slice(0, 20).map((variant) => ({
+        externalId: variant.externalId,
+        groupId: variant.groupId,
+        vendorCode: variant.vendorCode,
+        name: variant.name,
+        categoryName: variant.categoryName,
+        size: variant.size,
+        priceUah: variant.priceUah,
+        available: variant.available,
+        quantity: variant.quantity,
+      })),
+      applied: false,
+      message: "Попередній перегляд: база даних і залишки не змінювалися.",
+    };
   }
 }
