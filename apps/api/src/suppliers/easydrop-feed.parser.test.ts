@@ -41,18 +41,15 @@ test("rejects DTD/entity declarations", () => {
 
 test("rejects external image hosts", () => {
   assert.throws(
-    () => parseEasyDropFeed(
-      feed(item("1").replace("https://easydrop.one", "https://example.com")),
-      ),
+    () => parseEasyDropFeed(feed(item("1").replace("https://easydrop.one", "https://example.com"))),
     /дозволеному HTTPS-хості/,
   );
 });
 
 test("rejects malformed stock rather than silently treating it as zero", () => {
   assert.throws(
-    () => parseEasyDropFeed(
-      feed(item("1").replace("<quantity_in_stock>2", "<quantity_in_stock>oops")),
-      ),
+    () =>
+      parseEasyDropFeed(feed(item("1").replace("<quantity_in_stock>2", "<quantity_in_stock>oops"))),
     /quantity_in_stock має бути цілим числом/,
   );
 });
