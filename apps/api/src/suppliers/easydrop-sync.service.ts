@@ -127,7 +127,6 @@ export class EasyDropSyncService {
     }
   }
 
-
   async history() {
     return this.prisma.supplierSyncRun.findMany({
       where: { supplier: SUPPLIER },
