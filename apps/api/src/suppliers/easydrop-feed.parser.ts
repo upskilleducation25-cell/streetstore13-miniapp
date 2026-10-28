@@ -107,7 +107,11 @@ function parseXml(xml: string): XmlNode {
     const token = match[0];
     if (token === "<") fail("незакритий тег");
     if (token.startsWith("<?")) {
-      if (sawDeclaration || stack.length !== 1 || !/^<\?xml\s+version=["']1\.[01]["'][^?]*\?>$/.test(token)) {
+      if (
+        sawDeclaration ||
+        stack.length !== 1 ||
+        !/^<\?xml\s+version=["']1\.[01]["'][^?]*\?>$/.test(token)
+      ) {
         fail("недопустима XML-інструкція");
       }
       sawDeclaration = true;
@@ -122,7 +126,9 @@ function parseXml(xml: string): XmlNode {
       continue;
     }
     if (token.startsWith("<")) {
-      const opening = /^<\s*([A-Za-z_][\w:.-]*)([\s\S]*?)\s*(\/?)>$/.exec(token);
+      const opening = /^<\s*([A-Za-z_][\w:.-]*)([\s\S]*?)\s*(\/?)>$/.exec(
+        token,
+      );
       if (!opening) fail("неправильний відкривальний тег");
       const name = opening[1]!;
       const node: XmlNode = {
@@ -185,7 +191,11 @@ function parseItem(node: XmlNode): EasyDropFeedVariant | null {
   }
 
   const priceUah = Number(textOf(node, "priceuah"));
-  if (!Number.isFinite(priceUah) || priceUah <= 0 || Math.round(priceUah * 100) !== priceUah * 100) {
+  if (
+    !Number.isFinite(priceUah) ||
+    priceUah <= 0 ||
+    Math.round(priceUah * 100) !== priceUah * 100
+  ) {
     fail(`item ${externalId}: неправильна роздрібна ціна`);
   }
   const imageUrl = textOf(node, "image");
@@ -195,14 +205,24 @@ function parseItem(node: XmlNode): EasyDropFeedVariant | null {
   } catch {
     fail(`item ${externalId}: неправильне посилання на фото`);
   }
-  if (image.protocol !== "https:" || !IMAGE_HOSTS.has(image.hostname) || image.username || image.password) {
+  if (
+    image.protocol !== "https:" ||
+    !IMAGE_HOSTS.has(image.hostname) ||
+    image.username ||
+    image.password
+  ) {
     fail(`item ${externalId}: фото має бути на дозволеному HTTPS-хості EasyDrop`);
   }
   const availableRaw = textOf(node, "available").toLowerCase();
   if (availableRaw !== "true" && availableRaw !== "false") {
     fail(`item ${externalId}: неправильне поле available`);
   }
-  const quantity = parseInteger(textOf(node, "quantity_in_stock"), "quantity_in_stock", 0, 1_000_000);
+  const quantity = parseInteger(
+    textOf(node, "quantity_in_stock"),
+    "quantity_in_stock",
+    0,
+    1_000_000,
+  );
   const vendorCode = textOf(node, "vendorCode");
   const categoryId = textOf(node, "categoryId");
   if (!/^\d{1,32}$/.test(categoryId)) fail(`item ${externalId}: неправильний categoryId`);
@@ -226,7 +246,9 @@ export function parseEasyDropFeed(xml: string): EasyDropFeedPreview {
   const itemsNode = child(root, "items");
   if (!itemsNode) fail("відсутній блок items");
   const itemNodes = itemsNode.children.filter((entry) => entry.name === "item");
-  if (itemNodes.length === 0 || itemNodes.length > MAX_ITEMS) fail("недопустима кількість item");
+  if (itemNodes.length === 0 || itemNodes.length > MAX_ITEMS) {
+    fail("недопустима кількість item");
+  }
   const seen = new Set<string>();
   const variants: EasyDropFeedVariant[] = [];
   let skippedNonShoes = 0;
