@@ -9,7 +9,8 @@ const item = (id: string, size = "38") => `
   <vendorCode>SKU-${id}</vendorCode><image>https://easydrop.one/media/a.jpg</image>
   <param name="Розмір" unit="">${size}</param><available>true</available><quantity_in_stock>2</quantity_in_stock>
 </item>`;
-const feed = (items: string) => `<?xml version="1.0" encoding="UTF-8"?><shop><items>${items}</items></shop>`;
+const feed = (items: string) =>
+  `<?xml version="1.0" encoding="UTF-8"?><shop><items>${items}</items></shop>`;
 
 test("parses shoe sizes and groups model variants", () => {
   const parsed = parseEasyDropFeed(feed(item("1", "38") + item("2", "39")));
@@ -33,20 +34,29 @@ test("rejects DTD/entity declarations", () => {
 
 test("rejects external image hosts", () => {
   assert.throws(
-    () => parseEasyDropFeed(feed(item("1").replace("https://easydrop.one", "https://example.com"))),
+    () =>
+      parseEasyDropFeed(
+        feed(item("1").replace("https://easydrop.one", "https://example.com")),
+      ),
     /дозволеному HTTPS-хості/,
   );
 });
 
 test("rejects malformed stock rather than silently treating it as zero", () => {
   assert.throws(
-    () => parseEasyDropFeed(feed(item("1").replace("<quantity_in_stock>2", "<quantity_in_stock>oops"))),
+    () =>
+      parseEasyDropFeed(
+        feed(item("1").replace("<quantity_in_stock>2", "<quantity_in_stock>oops")),
+      ),
     /quantity_in_stock має бути цілим числом/,
   );
 });
 
 test("skips non-shoe items without a numeric EU size", () => {
-  const nonShoe = item("2").replace('<param name="Розмір" unit="">38</param>', '<param name="Розмір" unit="">M</param>');
+  const nonShoe = item("2").replace(
+    '<param name="Розмір" unit="">38</param>',
+    '<param name="Розмір" unit="">M</param>',
+  );
   const parsed = parseEasyDropFeed(feed(item("1") + nonShoe));
   assert.equal(parsed.shoeVariants.length, 1);
   assert.equal(parsed.skippedNonShoes, 1);
