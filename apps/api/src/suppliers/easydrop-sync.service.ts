@@ -406,14 +406,20 @@ export class EasyDropSyncService {
             }
 
             const mapping = await tx.supplierFeedItem.findUnique({
-              where: { supplier_externalId: { supplier: SUPPLIER, externalId: variant.externalId } },
+              where: {
+                supplier_externalId: { supplier: SUPPLIER, externalId: variant.externalId },
+              },
               select: { id: true, groupId: true, productVariantId: true },
             });
             if (mapping?.groupId && mapping.groupId !== variant.groupId) {
-              throw feedFailure("Постачальник змінив group_id наявної позиції; потрібна перевірка.");
+              throw feedFailure(
+                "Постачальник змінив group_id наявної позиції; потрібна перевірка.",
+              );
             }
             if (mapping?.productVariantId && mapping.productVariantId !== variantId) {
-              throw feedFailure("Зіставлення позиції постачальника змінилося; синхронізацію скасовано.");
+              throw feedFailure(
+                "Зіставлення позиції постачальника змінилося; синхронізацію скасовано.",
+              );
             }
             const otherMapping = await tx.supplierFeedItem.findUnique({
               where: { productVariantId: variantId },
