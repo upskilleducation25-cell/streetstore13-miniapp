@@ -19,7 +19,6 @@ export interface EasyDropFeedVariant {
 export interface EasyDropFeedPreview {
   totalItems: number;
   shoeVariants: EasyDropFeedVariant[];
-  skippedNonShoes: number;
   distinctModels: number;
 }
 
@@ -41,6 +40,9 @@ function fail(message: string): never {
 }
 
 function decodeXml(value: string): string {
+  if (/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)/.test(value)) {
+    fail("неправильне XML-посилання на сутність");
+  }
   return value.replace(/&([^;]+);/g, (_whole, entity: string) => {
     const predefined: Record<string, string> = {
       amp: "&",
@@ -147,6 +149,7 @@ function parseXml(xml: string): XmlNode {
     stack[stack.length - 1]!.text += decodeXml(token);
   }
   if (stack.length !== 1) fail("є незакриті теги");
+  if (document.text.trim() !== "") fail("текст поза кореневим елементом");
   if (document.children.length !== 1 || document.children[0]!.name !== "shop") {
     fail("кореневим елементом має бути shop");
   }
@@ -154,7 +157,9 @@ function parseXml(xml: string): XmlNode {
 }
 
 function child(node: XmlNode, name: string): XmlNode | undefined {
-  return node.children.find((entry) => entry.name === name);
+  const matches = node.children.filter((entry) => entry.name === name);
+  if (matches.length > 1) fail(`повторюється елемент ${name}`);
+  return matches[0];
 }
 
 function textOf(node: XmlNode, name: string): string {
@@ -172,7 +177,7 @@ function parseInteger(value: string, field: string, min: number, max: number): n
   return parsed;
 }
 
-function parseItem(node: XmlNode): EasyDropFeedVariant | null {
+function parseItem(node: XmlNode): EasyDropFeedVariant {
   const externalId = node.attributes.id;
   const groupId = node.attributes.group_id;
   if (!externalId || !/^\d{1,32}$/.test(externalId)) fail("item має неправильний id");
@@ -183,9 +188,8 @@ function parseItem(node: XmlNode): EasyDropFeedVariant | null {
     (entry) => entry.name === "param" && entry.attributes.name === "Розмір",
   );
   const sizeRaw = sizeParam?.text.trim();
-  // Non-shoe catalog entries are ignored; shoe variants must carry an EU numeric size.
   if (!sizeRaw || !/^\d{2}$/.test(sizeRaw) || Number(sizeRaw) < 20 || Number(sizeRaw) > 50) {
-    return null;
+    fail(`item ${externalId}: розмір має бути числовим розміром взуття EU`);
   }
 
   const priceUah = Number(textOf(node, "priceuah"));
@@ -247,20 +251,16 @@ export function parseEasyDropFeed(xml: string): EasyDropFeedPreview {
   if (itemNodes.length === 0 || itemNodes.length > MAX_ITEMS) fail("недопустима кількість item");
   const seen = new Set<string>();
   const variants: EasyDropFeedVariant[] = [];
-  let skippedNonShoes = 0;
   for (const item of itemNodes) {
     const id = item.attributes.id;
     if (!id || seen.has(id)) fail("порожній або повторний id товару");
     seen.add(id);
-    const parsed = parseItem(item);
-    if (parsed) variants.push(parsed);
-    else skippedNonShoes++;
+    variants.push(parseItem(item));
   }
   if (variants.length === 0) fail("у фіді не знайдено взуттєвих варіантів із розміром EU");
   return {
     totalItems: itemNodes.length,
     shoeVariants: variants,
-    skippedNonShoes,
     distinctModels: new Set(variants.map((variant) => variant.groupId)).size,
   };
 }
