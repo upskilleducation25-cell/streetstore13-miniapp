@@ -178,7 +178,7 @@ function parseInteger(value: string, field: string, min: number, max: number): n
   return parsed;
 }
 
-function parseItem(node: XmlNode): EasyDropFeedVariant {
+function parseItem(node: XmlNode): Omit<EasyDropFeedVariant, "categoryName"> {
   const externalId = node.attributes.id;
   const groupId = node.attributes.group_id;
   if (!externalId || !/^\d{1,32}$/.test(externalId)) fail("item має неправильний id");
