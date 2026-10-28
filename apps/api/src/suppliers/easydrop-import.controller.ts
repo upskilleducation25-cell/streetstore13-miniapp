@@ -28,6 +28,14 @@ export class EasyDropImportController {
     return this.syncer.sync();
   }
 
+
+  @Get("runs")
+  @ApiOperation({ summary: "Останні 20 запусків синхронізації EasyDrop" })
+  @ApiErrorResponses(401)
+  runs() {
+    return this.syncer.history();
+  }
+
   @Get("preview")
   @ApiOperation({
     summary: "Перевірити EasyDrop XML-фід без змін у каталозі",
