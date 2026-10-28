@@ -89,7 +89,7 @@ export function EasyDropPage() {
   const sync = useMutation({
     mutationFn: () =>
       api<EasyDropSyncResult>("/admin/suppliers/easydrop/sync", { method: "POST" }),
-    onSuccess: async (result) => {
+    onSuccess: async () => {
       toast("Синхронізацію EasyDrop завершено");
       queryClient.removeQueries({ queryKey: PREVIEW_KEY });
       await Promise.all([
@@ -97,13 +97,13 @@ export function EasyDropPage() {
         queryClient.invalidateQueries({ queryKey: ["products"] }),
         queryClient.invalidateQueries({ queryKey: ["dictionaries"] }),
       ]);
-      void result;
     },
     onError: (error) => toast(errorMessage(error), "error"),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: RUNS_KEY }),
   });
 
   const runSync = async () => {
-    if (!preview.data || preview.isFetching || sync.isPending) return;
+    if (!preview.data || preview.isFetching || preview.isError || sync.isPending) return;
     const accepted = await confirm({
       title: "Синхронізувати каталог EasyDrop?",
       message:
@@ -147,7 +147,7 @@ export function EasyDropPage() {
           </Button>
           <Button
             variant="danger"
-            disabled={!preview.data || preview.isFetching || sync.isPending}
+            disabled={!preview.data || preview.isFetching || preview.isError || sync.isPending}
             loading={sync.isPending}
             onClick={() => void runSync()}
           >
