@@ -1,16 +1,32 @@
-import { Controller, Get, UseGuards } from "@nestjs/common";
+import { Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 
 import { AdminAuthGuard } from "../admin-auth/admin-auth.guard.js";
 import { ApiErrorResponses } from "../common/swagger.js";
 import { EasyDropImportService } from "./easydrop-import.service.js";
+import { EasyDropSyncService } from "./easydrop-sync.service.js";
 
 @ApiTags("Адмінка: постачальники")
 @ApiCookieAuth()
 @UseGuards(AdminAuthGuard)
 @Controller("admin/suppliers/easydrop")
 export class EasyDropImportController {
-  constructor(private readonly importer: EasyDropImportService) {}
+  constructor(
+    private readonly importer: EasyDropImportService,
+    private readonly syncer: EasyDropSyncService,
+  ) {}
+
+  @Post("sync")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Синхронізувати каталог і залишки EasyDrop",
+    description:
+      "Повністю перевіряє фід до змін, оновлює товари, розміри та журнал складу транзакційно. Запуск не можна дублювати паралельно.",
+  })
+  @ApiErrorResponses(400, 401, 409, 502, 503)
+  sync() {
+    return this.syncer.sync();
+  }
 
   @Get("preview")
   @ApiOperation({
