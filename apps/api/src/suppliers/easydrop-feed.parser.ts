@@ -126,7 +126,7 @@ function parseXml(xml: string): XmlNode {
       continue;
     }
     if (token.startsWith("<")) {
-const opening = /^<\s*([A-Za-z_][\w:.-]*)([\s\S]*?)\s*(\/?)>$/.exec(token);
+      const opening = /^<\s*([A-Za-z_][\w:.-]*)([\s\S]*?)\s*(\/?)>$/.exec(token);
       if (!opening) fail("неправильний відкривальний тег");
       const name = opening[1]!;
       const node: XmlNode = {
