@@ -10,6 +10,7 @@ import { HealthController } from "./health/health.controller.js";
 import { OrdersModule } from "./orders/orders.module.js";
 import { PrismaModule } from "./prisma/prisma.module.js";
 import { StorageModule } from "./storage/storage.module.js";
+import { SuppliersModule } from "./suppliers/suppliers.module.js";
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { StorageModule } from "./storage/storage.module.js";
     OrdersModule,
     AdminAuthModule,
     AdminCatalogModule,
+    SuppliersModule,
   ],
   controllers: [HealthController],
 })
