@@ -34,10 +34,7 @@ test("rejects DTD/entity declarations", () => {
 
 test("rejects external image hosts", () => {
   assert.throws(
-    () =>
-      parseEasyDropFeed(
-        feed(item("1").replace("https://easydrop.one", "https://example.com")),
-      ),
+    () => parseEasyDropFeed(feed(item("1").replace("https://easydrop.one", "https://example.com"))),
     /дозволеному HTTPS-хості/,
   );
 });
