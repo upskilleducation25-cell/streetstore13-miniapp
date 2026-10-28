@@ -9,6 +9,7 @@ export interface EasyDropFeedVariant {
   vendorCode: string;
   name: string;
   categoryId: string;
+  categoryName: string;
   priceUah: number;
   imageUrl: string;
   size: string;
@@ -245,6 +246,17 @@ function parseItem(node: XmlNode): EasyDropFeedVariant {
 /** Parses and validates the whole feed before returning any usable data. */
 export function parseEasyDropFeed(xml: string): EasyDropFeedPreview {
   const root = parseXml(xml);
+  const catalogNode = child(root, "catalog");
+  if (!catalogNode) fail("відсутній блок catalog");
+  const categoryNames = new Map<string, string>();
+  for (const category of catalogNode.children.filter((entry) => entry.name === "category")) {
+    const id = category.attributes.id;
+    const name = category.text.trim();
+    if (!id || !/^\d{1,32}$/.test(id) || !name) fail("неправильний довідник категорій");
+    if (categoryNames.has(id)) fail("повторний id категорії");
+    categoryNames.set(id, name);
+  }
+  if (categoryNames.size === 0) fail("довідник категорій порожній");
   const itemsNode = child(root, "items");
   if (!itemsNode) fail("відсутній блок items");
   const itemNodes = itemsNode.children.filter((entry) => entry.name === "item");
@@ -255,7 +267,10 @@ export function parseEasyDropFeed(xml: string): EasyDropFeedPreview {
     const id = item.attributes.id;
     if (!id || seen.has(id)) fail("порожній або повторний id товару");
     seen.add(id);
-    variants.push(parseItem(item));
+    const parsed = parseItem(item);
+    const categoryName = categoryNames.get(parsed.categoryId);
+    if (!categoryName) fail(`item ${id}: categoryId відсутній у catalog`);
+    variants.push({ ...parsed, categoryName });
   }
   if (variants.length === 0) fail("у фіді не знайдено взуттєвих варіантів із розміром EU");
   return {
