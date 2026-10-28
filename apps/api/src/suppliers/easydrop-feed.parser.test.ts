@@ -3,12 +3,19 @@ import test from "node:test";
 
 import { parseEasyDropFeed } from "./easydrop-feed.parser.js";
 
-const item = (id: string, size = "38") => `
-<item id="${id}" group_id="200">
-  <categoryId>12</categoryId><name>Runner ${size}</name><priceuah>3500</priceuah>
-  <vendorCode>SKU-${id}</vendorCode><image>https://easydrop.one/media/a.jpg</image>
-  <param name="Розмір" unit="">${size}</param><available>true</available><quantity_in_stock>2</quantity_in_stock>
-</item>`;
+const item = (id: string, size = "38") =>
+  [
+    `<item id="${id}" group_id="200">`,
+    "<categoryId>12</categoryId>",
+    `<name>Runner ${size}</name>`,
+    "<priceuah>3500</priceuah>",
+    `<vendorCode>SKU-${id}</vendorCode>`,
+    "<image>https://easydrop.one/media/a.jpg</image>",
+    `<param name="Розмір" unit="">${size}</param>`,
+    "<available>true</available>",
+    "<quantity_in_stock>2</quantity_in_stock>",
+    "</item>",
+  ].join("\n");
 const feed = (items: string) =>
   `<?xml version="1.0" encoding="UTF-8"?><shop><items>${items}</items></shop>`;
 
