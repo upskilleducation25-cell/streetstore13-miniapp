@@ -26,4 +26,4 @@
 
 - The foundation PR adds persistence for stable supplier-item mappings and sync-run audit records.
 - The runtime preview PR adds strict XML validation and an authenticated, read-only admin preview endpoint. It does not write to the database or change stock.
-- Catalog apply, idempotent inventory updates, absent-item hiding, sync-run persistence, and scheduling remain separate stages and must not run until preview validation is reviewed.
+- This sync PR adds transactional catalog apply, idempotent inventory updates, absent-item hiding, and sanitized sync-run persistence behind an authenticated manual action. Daily scheduling and copying remote images into owned storage remain later stages.
