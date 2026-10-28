@@ -54,5 +54,8 @@ test("rejects a malformed size instead of silently skipping the item", () => {
     '<param name="Розмір" unit="">38</param>',
     '<param name="Розмір" unit="">M</param>',
   );
-  assert.throws(() => parseEasyDropFeed(feed(item("1") + malformed)), /числовим розміром взуття EU/);
+  assert.throws(
+    () => parseEasyDropFeed(feed(item("1") + malformed)),
+    /числовим розміром взуття EU/,
+  );
 });
