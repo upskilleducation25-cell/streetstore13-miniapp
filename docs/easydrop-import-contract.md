@@ -20,10 +20,10 @@
 4. Produce a preview/diff before applying changes. Applying must be one database transaction or a safely resumable, idempotent operation.
 5. Do not set stock to zero merely because a field is missing or malformed. Treat explicit unavailable/zero-stock values according to the validated feed contract.
 6. Prevent overlapping runs. Record start/end, status, counts and a sanitized error summary in `supplier_sync_runs`.
-7. Daily scheduled sync and an authenticated admin “Sync now” action are later stages; neither is implemented by this foundation migration.
+7. The authenticated admin “Sync now” action must be preceded by a successful read-only preview. Daily scheduled sync remains a later stage.
 
 ## Implementation stages
 
 - The foundation PR adds persistence for stable supplier-item mappings and sync-run audit records.
 - The runtime preview PR adds strict XML validation and an authenticated, read-only admin preview endpoint. It does not write to the database or change stock.
-- This sync PR adds transactional catalog apply, idempotent inventory updates, absent-item hiding, and sanitized sync-run persistence behind an authenticated manual action. Daily scheduling and copying remote images into owned storage remain later stages.
+- This sync PR adds transactional catalog apply, idempotent inventory updates, absent-item hiding, and sanitized sync-run persistence behind an authenticated manual action. The admin UI PR adds preview, explicit confirmation, result counts, and recent run history. Daily scheduling and copying remote images into owned storage remain later stages.
