@@ -5,6 +5,7 @@ import { AdminsPage } from "../features/admins/AdminsPage";
 import { LoginPage } from "../features/auth/LoginPage";
 import { CategoriesPage } from "../features/categories/CategoriesPage";
 import { DictionariesPage } from "../features/dictionaries/DictionariesPage";
+import { EasyDropPage } from "../features/suppliers/EasyDropPage";
 import { ProductFormPage } from "../features/products/ProductFormPage";
 import { ProductsPage } from "../features/products/ProductsPage";
 import { AdminLayout, OwnerOnly } from "./AdminLayout";
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
       { path: "products/:id", element: <ProductFormPage mode="edit" /> },
       { path: "categories", element: <CategoriesPage /> },
       { path: "dictionaries", element: <DictionariesPage /> },
+      { path: "suppliers/easydrop", element: <EasyDropPage /> },
       {
         path: "admins",
         element: (
