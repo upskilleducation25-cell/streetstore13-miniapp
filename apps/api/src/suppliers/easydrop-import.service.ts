@@ -98,7 +98,6 @@ export class EasyDropImportService {
         status: "PREVIEW",
         totalItems: parsed.totalItems,
         shoeVariants: parsed.shoeVariants.length,
-        skippedNonShoes: parsed.skippedNonShoes,
         distinctModels: parsed.distinctModels,
         sample: parsed.shoeVariants.slice(0, 20).map((variant) => ({
           externalId: variant.externalId,
