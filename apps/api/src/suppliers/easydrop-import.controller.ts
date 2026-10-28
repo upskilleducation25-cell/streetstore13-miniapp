@@ -28,7 +28,6 @@ export class EasyDropImportController {
     return this.syncer.sync();
   }
 
-
   @Get("runs")
   @ApiOperation({ summary: "Останні 20 запусків синхронізації EasyDrop" })
   @ApiErrorResponses(401)
