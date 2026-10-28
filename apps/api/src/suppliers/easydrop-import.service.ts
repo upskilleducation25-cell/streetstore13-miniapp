@@ -1,4 +1,9 @@
-import { BadGatewayException, Inject, Injectable, ServiceUnavailableException } from "@nestjs/common";
+import {
+  BadGatewayException,
+  Inject,
+  Injectable,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 
 import { ENV } from "../config/config.module.js";
 import type { Env } from "../config/env.js";
