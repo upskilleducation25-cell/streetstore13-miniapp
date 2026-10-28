@@ -60,13 +60,11 @@ const PRICE = new Intl.NumberFormat("uk-UA", {
   maximumFractionDigits: 2,
 });
 
-const dateTime = (value: string | null) =>
-  value ? new Date(value).toLocaleString("uk-UA") : "—";
+const dateTime = (value: string | null) => (value ? new Date(value).toLocaleString("uk-UA") : "—");
 
 function RunStatus({ status }: { status: EasyDropRun["status"] }) {
   const tone = status === "SUCCESS" ? "ok" : status === "FAILED" ? "danger" : "warn";
-  const label =
-    status === "SUCCESS" ? "Успішно" : status === "FAILED" ? "Помилка" : "Виконується";
+  const label = status === "SUCCESS" ? "Успішно" : status === "FAILED" ? "Помилка" : "Виконується";
   return <Badge tone={tone}>{label}</Badge>;
 }
 
@@ -87,8 +85,7 @@ export function EasyDropPage() {
     staleTime: 10_000,
   });
   const sync = useMutation({
-    mutationFn: () =>
-      api<EasyDropSyncResult>("/admin/suppliers/easydrop/sync", { method: "POST" }),
+    mutationFn: () => api<EasyDropSyncResult>("/admin/suppliers/easydrop/sync", { method: "POST" }),
     onSuccess: async () => {
       toast("Синхронізацію EasyDrop завершено");
       queryClient.removeQueries({ queryKey: PREVIEW_KEY });
@@ -120,11 +117,7 @@ export function EasyDropPage() {
         title="Постачальники"
         subtitle="EasyDrop · каталог взуття та складські залишки"
         actions={
-          <Button
-            variant="secondary"
-            loading={runs.isFetching}
-            onClick={() => void runs.refetch()}
-          >
+          <Button variant="secondary" loading={runs.isFetching} onClick={() => void runs.refetch()}>
             Оновити історію
           </Button>
         }
@@ -133,9 +126,9 @@ export function EasyDropPage() {
       <div className="mb-6 border border-line bg-panel p-4 sm:p-5">
         <h2 className="text-sm font-semibold">1. Перевірити фід</h2>
         <p className="mt-1 max-w-3xl text-sm text-muted">
-          Спочатку перевір фід без змін у базі. Сервер перевіряє XML, ID, EU-розміри, ціни,
-          залишки, категорії та HTTPS-посилання на фото. До успішної перевірки синхронізація
-          нічого не змінює.
+          Спочатку перевір фід без змін у базі. Сервер перевіряє XML, ID, EU-розміри, ціни, залишки,
+          категорії та HTTPS-посилання на фото. До успішної перевірки синхронізація нічого не
+          змінює.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button
@@ -170,9 +163,7 @@ export function EasyDropPage() {
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <div className="border border-line p-3">
                 <p className="text-xs text-muted">Позицій у фіді</p>
-                <p className="mt-1 text-xl font-semibold tabular-nums">
-                  {preview.data.totalItems}
-                </p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">{preview.data.totalItems}</p>
               </div>
               <div className="border border-line p-3">
                 <p className="text-xs text-muted">Варіантів взуття</p>
@@ -285,9 +276,7 @@ export function EasyDropPage() {
                       </td>
                       <td className="px-3 py-2 tabular-nums">{run.importedCount}</td>
                       <td className="px-3 py-2 tabular-nums">{run.hiddenCount}</td>
-                      <td className="max-w-xs px-3 py-2 text-muted">
-                        {run.errorMessage ?? "—"}
-                      </td>
+                      <td className="max-w-xs px-3 py-2 text-muted">{run.errorMessage ?? "—"}</td>
                     </tr>
                   ))}
                 </tbody>
