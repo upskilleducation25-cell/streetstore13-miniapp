@@ -127,6 +127,25 @@ export class EasyDropSyncService {
     }
   }
 
+
+  async history() {
+    return this.prisma.supplierSyncRun.findMany({
+      where: { supplier: SUPPLIER },
+      orderBy: { startedAt: "desc" },
+      take: 20,
+      select: {
+        id: true,
+        status: true,
+        startedAt: true,
+        finishedAt: true,
+        importedCount: true,
+        hiddenCount: true,
+        errorMessage: true,
+        summary: true,
+      },
+    });
+  }
+
   private async startRun(): Promise<{ id: string }> {
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(${ADVISORY_LOCK_A}, ${ADVISORY_LOCK_B})`;
