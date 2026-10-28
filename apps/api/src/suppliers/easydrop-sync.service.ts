@@ -50,10 +50,10 @@ function prepareGroups(feed: EasyDropFeedPreview): ModelGroup[] {
     externalIds.add(variant.externalId);
 
     const match = /\s+(\d{2})$/.exec(variant.name);
-    if (!match || match[1] !== variant.size) {
+    if (match && match[1] !== variant.size) {
       throw feedFailure("Назва товару та поле розміру не узгоджуються; синхронізацію скасовано.");
     }
-    const name = variant.name.slice(0, match.index).trim();
+    const name = match ? variant.name.slice(0, match.index).trim() : variant.name.trim();
     if (!name) throw feedFailure("У фіді є позиція без назви моделі.");
 
     let group = groups.get(variant.groupId);
