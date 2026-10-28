@@ -36,6 +36,11 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm --filter @ss13/api prisma:generate
       - run: pnpm format:check
+      - name: Temporary Prettier diagnostic
+        if: failure()
+        run: |
+          pnpm exec prettier --write apps/admin/src/features/suppliers/EasyDropPage.tsx apps/api/src/suppliers/easydrop-import.controller.ts apps/api/src/suppliers/easydrop-sync.service.ts
+          git diff -- apps/admin/src/features/suppliers/EasyDropPage.tsx apps/api/src/suppliers/easydrop-import.controller.ts apps/api/src/suppliers/easydrop-sync.service.ts
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm build
