@@ -126,9 +126,7 @@ function parseXml(xml: string): XmlNode {
       continue;
     }
     if (token.startsWith("<")) {
-      const opening = /^<\s*([A-Za-z_][\w:.-]*)([\s\S]*?)\s*(\/?)>$/.exec(
-        token,
-      );
+const opening = /^<\s*([A-Za-z_][\w:.-]*)([\s\S]*?)\s*(\/?)>$/.exec(token);
       if (!opening) fail("неправильний відкривальний тег");
       const name = opening[1]!;
       const node: XmlNode = {
@@ -246,9 +244,7 @@ export function parseEasyDropFeed(xml: string): EasyDropFeedPreview {
   const itemsNode = child(root, "items");
   if (!itemsNode) fail("відсутній блок items");
   const itemNodes = itemsNode.children.filter((entry) => entry.name === "item");
-  if (itemNodes.length === 0 || itemNodes.length > MAX_ITEMS) {
-    fail("недопустима кількість item");
-  }
+  if (itemNodes.length === 0 || itemNodes.length > MAX_ITEMS) fail("недопустима кількість item");
   const seen = new Set<string>();
   const variants: EasyDropFeedVariant[] = [];
   let skippedNonShoes = 0;
