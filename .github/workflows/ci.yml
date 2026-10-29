@@ -31,11 +31,18 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Validate Prisma schema
+        run: pnpm --filter @ss13/api exec prisma validate
+      - name: Generate Prisma Client
+        run: pnpm --filter @ss13/api prisma:generate
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm build
-      - run: pnpm --filter @ss13/api prisma:deploy
+      - name: Apply migrations to clean PostgreSQL
+        run: pnpm --filter @ss13/api prisma:deploy
+      - name: Verify migration status
+        run: pnpm --filter @ss13/api exec prisma migrate status
       - run: pnpm db:seed
       - run: pnpm db:seed:demo
       - run: pnpm test
