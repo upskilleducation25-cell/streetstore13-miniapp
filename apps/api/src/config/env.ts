@@ -5,6 +5,11 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url(),
   REDIS_URL: z.url().optional(),
+  /** Приватна URL-адреса EasyDrop XML-фіду. Не логувати: може містити ключ доступу. */
+  EASYDROP_FEED_URL: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim() || undefined),
   /** Токен бота від @BotFather. Без нього вхід через Telegram повертає 503. */
   TELEGRAM_BOT_TOKEN: z
     .string()
