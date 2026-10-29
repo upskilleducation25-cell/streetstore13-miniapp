@@ -11,6 +11,7 @@ const NAV = [
   { to: "/products", label: "Товари" },
   { to: "/categories", label: "Категорії" },
   { to: "/dictionaries", label: "Довідники" },
+  { to: "/suppliers/easydrop", label: "Постачальники" },
   { to: "/admins", label: "Адміністратори", ownerOnly: true },
   { to: "/account", label: "Мій акаунт" },
 ];
